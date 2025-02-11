@@ -5,7 +5,7 @@
 #include "EEPROMManager.h"
 #include <Arduino.h>
 #include <queue>
-
+#include "esp_task_wdt.h"
 class RFTransmitter {
 public:
     RFTransmitter(uint8_t txPin);
@@ -13,6 +13,7 @@ public:
     static void RFTransmitterTask(void* parameter);  // 改为静态方法
     void sendStoredSignal();
     bool updateRFParamsFromEEPROM(uint16_t length);
+    bool readRFParamsFromEEPROM(RFParams& params);  // 新增方法
     
 private:
     uint8_t txPin;
@@ -21,6 +22,7 @@ private:
     TaskHandle_t rfTaskHandle;
     RFParams lastReceivedParams;
     std::queue<RFParams> sendQueue;
+    
     
     void setupRFSender(const RFParams& params);
 };

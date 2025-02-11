@@ -18,7 +18,7 @@ void startTasks() {
         "RF_Receiver_Task",
         8192,
         &rfReceiver,
-        2,
+        1,
         NULL,
         1
     );
@@ -37,7 +37,12 @@ void startTasks() {
 
 void setup() {
     Serial.begin(9600);
-    while (!Serial) delay(10);
+    while (!Serial) {
+        delay(10);
+    }
+    
+    // 初始化看门狗
+    esp_task_wdt_init(5, true);
     
     // 初始化 EEPROM
     EEPROMManager::EEPROMInitialize();
@@ -52,18 +57,7 @@ void setup() {
 }
 
 void loop() {
-    static uint32_t lastToggleTime = 0;
-    const uint32_t TOGGLE_INTERVAL = 10000; // 10秒切换一次模式
-    
-    uint32_t currentTime = millis();
-    if (currentTime - lastToggleTime >= TOGGLE_INTERVAL) {
-        lastToggleTime = currentTime;
-        static bool monitorFlag = 0;
-        monitorFlag = !monitorFlag;       
-        
-        Serial.printf("Switched to %s mode\n", 
-            monitorFlag ? "monitor" : "transmit");
-    }
+  
     
     delay(100);
 }

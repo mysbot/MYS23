@@ -143,4 +143,11 @@ void RFReceiver::storeSignalParams(Decoder* pdec) {
         Serial.printf("%02X ", lastReceivedParams.data[i]);
     }
     Serial.println();
+    // 修改EEPROM写入部分，写入整个RFParams结构体
+    if (!EEPROMManager::writeData(INIT_DATA_ADDRESS, (uint8_t*)&lastReceivedParams, sizeof(RFParams))) {
+        Serial.println("Failed to save EEPROM data");        
+    } else {
+        Serial.println("EEPROM data saved");
+        Serial.printf("Saved complete RFParams size: %d bytes\n", sizeof(RFParams));
+    }
 }
