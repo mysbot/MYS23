@@ -5,7 +5,7 @@
 #include <EEPROM.h>
 #include <Arduino.h>
 
-#define INIT_DATA 0xFF
+
 
 class EEPROMManager {
 public:

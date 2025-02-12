@@ -11,8 +11,7 @@ public:
     RFTransmitter(uint8_t txPin);
     void begin();
     static void RFTransmitterTask(void* parameter);  // 改为静态方法
-    void sendStoredSignal();
-    bool updateRFParamsFromEEPROM(uint16_t length);
+    void sendStoredSignal();   
     bool readRFParamsFromEEPROM(RFParams& params);  // 新增方法
     
 private:
@@ -21,8 +20,7 @@ private:
     Track* rfTrack;
     TaskHandle_t rfTaskHandle;
     RFParams lastReceivedParams;
-    std::queue<RFParams> sendQueue;
-    
+    std::queue<RFParams> sendQueue;    
     
     void setupRFSender(const RFParams& params);
 };

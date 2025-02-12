@@ -1,14 +1,14 @@
 #include "RFReceiverTask.h"
+
+// 定义临界区锁
+portMUX_TYPE spinlock = portMUX_INITIALIZER_UNLOCKED;
+
 const char *encoding_names[] = {
     "RFMOD_TRIBIT",          // T
     "RFMOD_TRIBIT_INVERTED", // N
     "RFMOD_MANCHESTER",      // M
     "<unmanaged encoding>"   // Anything else
 };
-
- 
-
-
 
 RFReceiver::RFReceiver(uint8_t rxPin) 
     : rxPin(rxPin),rfTaskHandle(nullptr) {
@@ -20,23 +20,41 @@ void RFReceiver::begin() {
 }
 // 接收任务，运行在 core1
 void RFReceiver::RFReceiverTask(void* parameter) {
-  
+    // 配置任务参数
+    esp_task_wdt_init(10, false);  // 禁用看门狗复位
+    
     for (;;) {
-       
-            // 调用 RFManager 内部接收逻辑（原来 rfReceiverTask 的代码移到此处）
-            getRFTrack()->treset();  // 请确保在 RFManager 中添加 getRFTrack() 以访问 rfTrack
+        // 简化临界区处理
+        getRFTrack()->treset();
+               
+          
             while (!getRFTrack()->do_events()) {
                 vTaskDelay(1);
             }
+        // 处理RF事件
+        /*
+        bool hasEvent = false;
+        for(int i = 0; i < 100; i++) {  // 增加采样次数
+            if(getRFTrack()->do_events()) {
+                hasEvent = true;
+                break;
+            }
+            vTaskDelay(1);  // 短延时
+        }
+        */
+       // if(hasEvent) {
             Decoder* pdec = getRFTrack()->get_data(RF433ANY_FD_ALL);
             if (pdec) {
-                Serial.println("Received RF Signal (RTOS Task):");
-                // 处理接收到的信号（调用可公用的处理方法，可将 storeSignalParams 改为 public）
+                Serial.println("Received RF Signal");
+                //portENTER_CRITICAL(&spinlock);
                 storeSignalParams(pdec);
+                //portEXIT_CRITICAL(&spinlock);
                 delete pdec;
             }
+       // }
         
-        vTaskDelay(pdMS_TO_TICKS(10));
+        // 适当的任务延时
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
 }
 
@@ -51,8 +69,7 @@ const char *RFReceiver::id_letter_to_encoding_name(char c) {
 
     return encoding_names[3];
 }
-void serial_printf(const char* msg, ...)
-__attribute__((format(printf, 1, 2)));
+
 
 // 添加辅助函数 stringToHex 和 getEncodingFromName
 uint8_t RFReceiver::stringToHex(const char* str, uint8_t* out) {
@@ -143,11 +160,16 @@ void RFReceiver::storeSignalParams(Decoder* pdec) {
         Serial.printf("%02X ", lastReceivedParams.data[i]);
     }
     Serial.println();
-    // 修改EEPROM写入部分，写入整个RFParams结构体
-    if (!EEPROMManager::writeData(INIT_DATA_ADDRESS, (uint8_t*)&lastReceivedParams, sizeof(RFParams))) {
-        Serial.println("Failed to save EEPROM data");        
-    } else {
-        Serial.println("EEPROM data saved");
-        Serial.printf("Saved complete RFParams size: %d bytes\n", sizeof(RFParams));
+    // 确保EEPROM写入成功
+    if (!EEPROMManager::writeData(FIRST_ADDRESS_FOR_RF_SIGNAL, (uint8_t*)&lastReceivedParams, sizeof(RFParams))) {
+        Serial.println("Failed to save EEPROM data");
+        return;  // 如果保存失败，直接返回
     }
+    
+    Serial.println("EEPROM data saved successfully");
+    // 增加调试信息
+    Serial.printf("Data length: %d, Bits: %d, Encoding: %d\n", 
+                 lastReceivedParams.dataLength, 
+                 lastReceivedParams.nBit,
+                 (int)lastReceivedParams.encoding);
 }
