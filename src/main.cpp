@@ -1,13 +1,11 @@
 #include "RFReceiverTask.h"
 #include "RFTransmitterTask.h"
 
-// 定义RF引脚和EEPROM地址
-#define RF_RX_PIN 19
-#define RF_TX_PIN 21
-//#define FIRST_ADDRESS_FOR_RF_SIGNAL 0x0100  // 添加这个定义
 
-RFReceiver rfReceiver(RF_RX_PIN);
-RFTransmitter rfTransmitter(RF_TX_PIN);
+
+
+RFReceiver rfReceiver(RF_RECEIVER_PIN);
+RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN);
 
 void startTasks() {
     // 接收任务
@@ -36,10 +34,10 @@ void startTasks() {
 }
 
 void setup() {
-    Serial.begin(115200);  // 提高波特率
+    Serial.begin(9600);  // 提高波特率
     
     // 配置CPU频率
-    //setCpuFrequencyMhz(240);
+    setCpuFrequencyMhz(240);
     
     // 初始化看门狗，延长超时时间
     esp_task_wdt_init(10, true);
@@ -61,7 +59,7 @@ void setup() {
 }
 
 void loop() {
-    //delay(100);  // 短暂延时，避免CPU占用过高
+    
     
     yield();  // 让出CPU时间
     vTaskDelay(pdMS_TO_TICKS(10));  // 短暂延时，避免看门狗复位
@@ -70,7 +68,7 @@ void loop() {
     static uint32_t lastStatusTime = 0;
     if(millis() - lastStatusTime > 5000) {
         // 每5秒打印一次系统状态
-        Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
+       // Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
         lastStatusTime = millis();
     }
     

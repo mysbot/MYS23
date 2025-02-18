@@ -22,7 +22,7 @@ void RFTransmitter::RFTransmitterTask(void *parameter)
     esp_task_wdt_add(NULL);
 
     RFParams params;
-    const TickType_t sendInterval = pdMS_TO_TICKS(2000); // 2秒发送间隔
+    const TickType_t sendInterval = pdMS_TO_TICKS(5000); // 2秒发送间隔
     TickType_t lastSendTime = xTaskGetTickCount();
 
     for (;;)
@@ -121,7 +121,7 @@ void RFTransmitter::setupRFSender(const RFParams &params)
             Serial.println("Failed to create RF sender");
             return;
         }
-        
+        /*
         // 打印发送参数
         Serial.println();
         Serial.printf("send RF Parameters:\n");
@@ -142,7 +142,7 @@ void RFTransmitter::setupRFSender(const RFParams &params)
             Serial.printf("%02X ", params.data[i]);
         }
         Serial.println();
-        
+        */
     }
     catch (...)
     {

@@ -1,3 +1,5 @@
+#ifndef RF_RECEIVERTASK_H
+#define RF_RECEIVERTASK_H
 #pragma once
 #include "RF433any.h"
 #include "RF433send.h"
@@ -45,3 +47,4 @@ private:
     void processReceivedData(Decoder* pdec);
     void setupRFSender(const RFParams& params);
 };
+#endif

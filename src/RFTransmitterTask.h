@@ -1,3 +1,5 @@
+#ifndef RF_TRANSMITTERTASK_H
+#define RF_TRANSMITTERTASK_H
 #pragma once
 #include "RF433any.h"
 #include "RF433send.h"
@@ -24,3 +26,4 @@ private:
     
     void setupRFSender(const RFParams& params);
 };
+#endif
