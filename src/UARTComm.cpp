@@ -6,7 +6,6 @@ UARTComm::UARTComm(SerialComm* serialCommInstance, uint32_t baudRate, uint8_t rx
     : serialComm(serialCommInstance), BaudRate(baudRate), rx_pin(rx_pin), tx_pin(tx_pin), isCom1Serial(isCom1Serial) {}
 
 void UARTComm::init() {
-    //SerialGuard guard;
     serialComm->begin(BaudRate, rx_pin, tx_pin);
     delay(50);  // 给串口初始化一些时间
     eeprommanager.EEPROMInitialize();
@@ -42,8 +41,6 @@ bool UARTComm::update() {
         uint8_t byte = serialComm->read();
         processedBytes++;
         dataProcessed = true;  // 标记已处理数据
-        //Serial.print("Received byte: ");
-        //Serial.println(byte, HEX);
 
         switch (receiveState) {
             case ReceiveState::WAIT_FOR_HEADER:
@@ -102,7 +99,7 @@ bool UARTComm::update() {
                 break;
 
             case ReceiveState::WAIT_FOR_CRC:
-                if (bytesReceived < sizeof(CommFrame) - 1) {
+                if (bytesReceived < expectedFrameLength()) {
                     receivedCRC = (receivedCRC << 8) | byte;
                     bytesReceived++;
                     if (bytesReceived >= expectedFrameLength()) {
@@ -160,35 +157,20 @@ UARTCommand UARTComm::executeCommand(const CommFrame& frame) {
   
         case static_cast<uint8_t>(FunctionCode::READ):
            return handleReadCommand(frame);           
-            break;
         case static_cast<uint8_t>(FunctionCode::WRITE):
             return handleWriteCommand(frame);            
-            break;
         case static_cast<uint8_t>(FunctionCode::HEART):
             return handleHeartbeat(frame);             
-            break;
         case static_cast<uint8_t>(FunctionCode::SUCCESEE):
-            //serialComm->println("Operation success confirmation");
             return  {FunctionCode::SUCCESEE,frame.dataAddress,frame.data};
-            break;
         case static_cast<uint8_t>(FunctionCode::FAILED):
-            //serialComm->println("Operation exception confirmation");
             return  {FunctionCode::FAILED,frame.dataAddress,frame.data};
-            break;
         case static_cast<uint8_t>(FunctionCode::CONFIRM):
-            //serialComm->println("Function receive confirmation");
             return  {FunctionCode::CONFIRM,frame.dataAddress,INIT_DATA};
-            break;
-      
         case static_cast<uint8_t>(FunctionCode::FUNCTION):
-            // Handle custom function           
             return handleFunctionCommand(frame); 
-            break;
-      
         default:
-            //serialComm->println("Undefined function code");
             return  {FunctionCode::C_DEFAULT,INIT_DATA,INIT_DATA};
-            break;
     }
     
 }

@@ -13,7 +13,7 @@ void RFTransmitter::begin()
 }
 
 // 发送任务，运行在 core2
-void RFTransmitter::RFTransmitterTask(void *parameter)
+void RFTransmitter::RFTransmitterTask(void *parameter,bool isTranmitter)
 {
     RFTransmitter *transmitter = static_cast<RFTransmitter *>(parameter);
 
@@ -29,23 +29,25 @@ void RFTransmitter::RFTransmitterTask(void *parameter)
     {
         // 喂狗
         esp_task_wdt_reset();
-
-        TickType_t currentTime = xTaskGetTickCount();
-        if ((currentTime - lastSendTime) >= sendInterval)
+        if (isTranmitter)
         {
-            if (transmitter->readRFParamsFromEEPROM(params))
+
+            TickType_t currentTime = xTaskGetTickCount();
+            if ((currentTime - lastSendTime) >= sendInterval)
             {
-                transmitter->setupRFSender(params);
-                if (transmitter->rfSender)
+                if (transmitter->readRFParamsFromEEPROM(params))
                 {
-                    Serial.println("Sending RF signal...");
-                    transmitter->rfSender->send(params.dataLength, params.data);
-                    Serial.println("RF signal sent successfully");
-                    lastSendTime = currentTime; // 更新上次发送时间
+                    transmitter->setupRFSender(params);
+                    if (transmitter->rfSender)
+                    {
+                        Serial.println("Sending RF signal...");
+                        transmitter->rfSender->send(params.dataLength, params.data);
+                        Serial.println("RF signal sent successfully");
+                        lastSendTime = currentTime; // 更新上次发送时间
+                    }
                 }
             }
         }
-
         // 较短的任务延时，保持系统响应性
         vTaskDelay(pdMS_TO_TICKS(100));
     }
@@ -75,7 +77,7 @@ bool RFTransmitter::readRFParamsFromEEPROM(RFParams &params)
         Serial.println("Invalid RF parameters too long");
         return false;
     }
-   
+
     // 验证数据非空
     bool hasValidData = false;
     for (size_t i = 0; i < params.dataLength; i++)
