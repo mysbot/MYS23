@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include "esp_task_wdt.h"
-
+#include "HardwareSerialWrapper.h"
 
 
 #define VERSION 0x21
@@ -32,10 +32,10 @@
 
 #define PRODUCTION_TEST_MODE_ADDRESS   0x3C
 //#define SLEEP_TIME_ADDR 0x2c 
-#define RFMODE_VALUE_ADDRESS 0x28 
+//#define RFMODE_VALUE_ADDRESS 0x28 
 #define RFWORKMode_ADDRESS 0x20 
 #define MYS_ADDRESS 0x30 
-#define PAIRMODE_ADDRESS 0x1c 
+//#define PAIRMODE_ADDRESS 0x1c 
 #define CONTROL_GROUP_ADDRESS 0x38 
 #define SLIDINGDOOR_MODE_ADDRESS 0x0c 
 #define RAINSIGNAL_CONTROL_ADDRESS 0x10
@@ -47,9 +47,9 @@ struct address_Manager{
 
 uint8_t  HOPOTransmit=0;
 uint8_t  localAddress=MYS_ADDRESS;
-uint8_t  RFmodeAddress=RFMODE_VALUE_ADDRESS;
+//uint8_t  RFmodeAddress=RFMODE_VALUE_ADDRESS;
 uint8_t  RFworkingModeAddress=RFWORKMode_ADDRESS;
-uint8_t  RFpairingModeAddress=PAIRMODE_ADDRESS;
+//uint8_t  RFpairingModeAddress=PAIRMODE_ADDRESS;
 uint8_t  controlGroupAddress=CONTROL_GROUP_ADDRESS;
 uint8_t  rainSignalAddress=RAINSIGNAL_CONTROL_ADDRESS;
 uint8_t  mutualAddress=MUTUAL_CONTROL_ADDRESS;
@@ -59,8 +59,8 @@ uint8_t  slidingDoorModeAddress=SLIDINGDOOR_MODE_ADDRESS;
 uint8_t localadd_value=0;//默认0，0-FE为可用。
 uint8_t RFpairingMode_value=0;//1，1组配对模式，2，2组配对模式；F,清码。其他，工作模式
 uint8_t RFworkingMode_value=0;//0，接收模式，1，发射模式;其他，未定义，默认为0
-uint8_t RFmode_value=0; //0，HANS协议；1，HOPO协议；其他，未定义，默认为0
-uint8_t previousRFmode_value=0;
+//uint8_t RFmode_value=0; //0，HANS协议；1，HOPO协议；其他，未定义，默认为0
+//uint8_t previousRFmode_value=0;
 uint8_t rainSignal_value=1;
 uint8_t Is_mutual_value=1;
 uint8_t Is_security_value=3;
@@ -74,9 +74,9 @@ extern address_Manager ADDmanager;
 
 
 // Define RF modes
-#define RF_HANS_MODE 0
-#define RF_HOPO_MODE 1
-#define RF_GU_MODE 2
+//#define RF_HANS_MODE 0
+//#define RF_HOPO_MODE 1
+//#define RF_GU_MODE 2
 //#define RF_ED_MODE 3
 //
 #define RF_BIT_DEFAULT 39
@@ -84,7 +84,7 @@ extern address_Manager ADDmanager;
 //extern uint8_t RF_BIT ;
 //extern uint8_t RF_NUM ;
 
-#define NUM_GROUPS 2
+#define NUM_GROUPS 6
 
 #define INIT_DATA  0xFF
 
@@ -130,10 +130,10 @@ enum class RFworkMode : uint8_t {
     HANS_RECEIVER = 0,
     HANS_TRANSMITTER = 1,
     HOPO_RECEIVER = 2,
-    HOPO_TRANSMITTER = 3,
-    HANS_BOTH= 4,   
-    HANS_HOPO = 5,
-    HOPO_HANS = 7,
+    HOPO_TRANSMITTER = 3,     
+    HANS_HOPO = 4,
+    HOPO_HANS = 6,
+    HANS_BOTH= 0xEE,  
     OTHER = 0xFF
    
 };
@@ -244,12 +244,12 @@ enum class Pairing : uint8_t {
     HANS_2=0X2,
     HOPO_1=0X3,
     HOPO_2=0X4, 
-    HANS_RECEIVER=0X5,
-    HOPO_TRANSMITTER=0X6,
-    HOPO_RECEIVER=0X7,
-    HANS_TRANSMITTER=0X8,
-    HANS_WIRELESS=0X09,
-    HOPO_WIRELESS=0X0A,
+    //HANS_RECEIVER=0X5,
+    //HOPO_TRANSMITTER=0X6,
+    //HOPO_RECEIVER=0X7,
+    //HANS_TRANSMITTER=0X8,
+    HANS_WIRELESS=0X05,
+    HOPO_WIRELESS=0X06,
     PAIR_CLEAR=0X0F
    
 };

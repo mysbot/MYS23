@@ -1,11 +1,19 @@
 #include "RFReceiverTask.h"
 #include "RFTransmitterTask.h"
+#include "COMM1.h"
+#include "COMM0.h"
 
+HardwareSerial mySerial(2);
+uint8_t TARGET_ADDRESS = 0XFF;
+uint8_t RF_buffer[NUM_GROUPS][RF_NUM_DEFAULT] = {0};
+address_Manager ADDmanager;
 
 
 
 RFReceiver rfReceiver(RF_RECEIVER_PIN);
 RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN);
+Comm1 comm1;
+Comm0 comm0;
 
 void startTasks() {
     // 接收任务
@@ -34,8 +42,9 @@ void startTasks() {
 }
 
 void setup() {
-    Serial.begin(9600);  // 提高波特率
     
+    comm0.init();
+    comm1.init();
     // 配置CPU频率
     setCpuFrequencyMhz(240);
     
@@ -59,7 +68,6 @@ void setup() {
 }
 
 void loop() {
-    
     
     yield();  // 让出CPU时间
     vTaskDelay(pdMS_TO_TICKS(10));  // 短暂延时，避免看门狗复位
