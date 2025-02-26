@@ -12,7 +12,7 @@ class RFTransmitter {
 public:
     RFTransmitter(uint8_t txPin);
     void begin();
-    static void RFTransmitterTask(void *parameter,bool isTranmitter);  // 改为静态方法
+    static void RFTransmitterTask(void *parameter);  // 改为静态方法
     void sendStoredSignal();   
     bool readRFParamsFromEEPROM(RFParams& params);  // 新增方法
     

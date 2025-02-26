@@ -69,8 +69,7 @@ void startTasks() {
 
     // 发送任务
     xTaskCreatePinnedToCore(
-        RFTransmitter::RFTransmitterTask(parameter,isTransmitter),
-        
+        RFTransmitter::RFTransmitterTask,        
         "RF_Transmitter_Task",
         8192,
         &rfTransmitter,
@@ -108,6 +107,7 @@ void processCommand(UARTCommand command, bool isComm1)
         Command tempCommand = static_cast<Command>(command.dataAddress);
        
         isTransmitter=true;
+        SERIAL_MANAGER.serial0Function(tempCommand);
         //windowcontrol.controlBasedOnWindowType(ControlType::COMM1, tempCommand);
         //windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, tempCommand);
         //windowcontrol.controlBasedOnWindowType(ControlType::TRANSMITTER, tempCommand);

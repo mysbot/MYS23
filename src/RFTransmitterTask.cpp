@@ -13,7 +13,7 @@ void RFTransmitter::begin()
 }
 
 // 发送任务，运行在 core2
-void RFTransmitter::RFTransmitterTask(void *parameter,bool isTranmitter)
+void RFTransmitter::RFTransmitterTask(void *parameter)
 {
     RFTransmitter *transmitter = static_cast<RFTransmitter *>(parameter);
 
@@ -29,25 +29,23 @@ void RFTransmitter::RFTransmitterTask(void *parameter,bool isTranmitter)
     {
         // 喂狗
         esp_task_wdt_reset();
-        if (isTranmitter)
-        {
 
-            TickType_t currentTime = xTaskGetTickCount();
-            if ((currentTime - lastSendTime) >= sendInterval)
+        TickType_t currentTime = xTaskGetTickCount();
+        if ((currentTime - lastSendTime) >= sendInterval)
+        {
+            if (transmitter->readRFParamsFromEEPROM(params))
             {
-                if (transmitter->readRFParamsFromEEPROM(params))
+                transmitter->setupRFSender(params);
+                if (transmitter->rfSender)
                 {
-                    transmitter->setupRFSender(params);
-                    if (transmitter->rfSender)
-                    {
-                        Serial.println("Sending RF signal...");
-                        transmitter->rfSender->send(params.dataLength, params.data);
-                        Serial.println("RF signal sent successfully");
-                        lastSendTime = currentTime; // 更新上次发送时间
-                    }
+                    Serial.println("Sending RF signal...");
+                    transmitter->rfSender->send(params.dataLength, params.data);
+                    Serial.println("RF signal sent successfully");
+                    lastSendTime = currentTime; // 更新上次发送时间
                 }
             }
         }
+
         // 较短的任务延时，保持系统响应性
         vTaskDelay(pdMS_TO_TICKS(100));
     }
