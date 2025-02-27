@@ -21,24 +21,15 @@ void SerialManager::init() {
     uartComm1->init();
     
     // 添加更详细的初始化信息
-    Serial.println("SerialManager: COM0初始化完成");
-    mySerial.println("SerialManager: COM1初始化完成");
+    Serial.println("SerialManager: COM0 init");
+    mySerial.println("SerialManager: COM1 init");
     
     // 测试COM1连接是否正常
     if (uartComm1) {
-        CommFrame testFrame = {
-            FIRSTBYTE,
-            ADDmanager.localadd_value,
-            0x00,  // 广播地址
-            static_cast<uint8_t>(FunctionCode::HEART),
-            0x00,
-            0x00,
-            0,
-            false
-        };
+       
         // 发送测试心跳，验证COM1是否正常
-        uartComm1->sendHEXheart(0x00);
-        Serial.println("SerialManager: 发送COM1测试帧");
+        uartComm1->sendHEXheart(0xaa);
+        Serial.println("SerialManager: COM1 send test");
     }
 }
 

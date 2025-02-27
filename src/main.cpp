@@ -1,5 +1,5 @@
 #include "RFReceiverTask.h"
-#include "RFTransmitterTask.h"
+//#include "RFTransmitterTask.h"
 //#include "COMM1.h"
 //#include "COMM0.h"
 #include "SerialManager.h"
@@ -9,10 +9,10 @@ uint8_t TARGET_ADDRESS = 0XFF;
 uint8_t RF_buffer[NUM_GROUPS][RF_NUM_DEFAULT] = {0};
 address_Manager ADDmanager;
 
-bool isTransmitter=false;
+
 
 RFReceiver rfReceiver(RF_RECEIVER_PIN);
-RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN);
+//RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN);
 EEPROMManager eeprommanager;
 
 void uartTask(void *parameter)
@@ -31,6 +31,7 @@ void uartTask(void *parameter)
 
 void startTasks() {
     // 修改UART任务配置
+    
     xTaskCreatePinnedToCore(
         uartTask,
         "UART Task",
@@ -54,6 +55,7 @@ void startTasks() {
     );
 
     // 发送任务
+    /*
     xTaskCreatePinnedToCore(
         RFTransmitter::RFTransmitterTask,        
         "RF_Transmitter_Task",
@@ -63,15 +65,16 @@ void startTasks() {
         NULL,
         0
     );
+    */
 }
 
 void processCommand(UARTCommand command, bool isComm1)
 {
     // 添加调试输出
     Serial.print(isComm1 ? "COM1" : "COM0");
-    Serial.print(" 收到命令: 功能码=");
+    Serial.print(" rec com: functioncode=");
     Serial.print(static_cast<int>(command.responseCode));
-    Serial.print(" 数据地址=0x");
+    Serial.print(" dataaddress=0x");
     Serial.println(command.dataAddress, HEX);
 
     switch (command.responseCode)
@@ -99,12 +102,12 @@ void processCommand(UARTCommand command, bool isComm1)
     {
         Command tempCommand = static_cast<Command>(command.dataAddress);
        
-        isTransmitter = true;
+        
         
         // 区分处理来源
         if (isComm1) {
             // COM1的处理 - 添加打印确认
-            Serial.print("COM1触发功能: 0x");
+            Serial.print("COM1 recv: 0x");
             Serial.println(static_cast<uint8_t>(tempCommand), HEX);
         }
         
@@ -158,7 +161,7 @@ void setup() {
     //EEPROMManager::EEPROMInitialize();
     
     // 初始化RF管理器
-    rfTransmitter.begin();
+    
     rfReceiver.begin();
     
     // 启动任务
