@@ -26,7 +26,7 @@ void RFReceiver::RFReceiverTask(void *parameter)
 
     // 添加信号接收时间控制
     uint32_t lastReceiveTime = 0;
-    const uint32_t RECEIVE_INTERVAL = 1500; // 1秒的接收间隔
+    const uint32_t RECEIVE_INTERVAL = 1000; // 1秒的接收间隔
 
     for (;;)
     {
@@ -45,14 +45,14 @@ void RFReceiver::RFReceiverTask(void *parameter)
             // 检查是否已经过了接收间隔时间
             if (currentTime - lastReceiveTime >= RECEIVE_INTERVAL)
             {
-                Serial.println("Received RF Signal");
+                //Serial.println("Received RF Signal");
                 storeSignalParams(pdec);
                 lastReceiveTime = currentTime; // 更新最后接收时间
-                Serial.printf("Next receive will be after: %lu ms\n", currentTime + RECEIVE_INTERVAL);
+                //Serial.printf("Next receive will be after: %lu ms\n", currentTime + RECEIVE_INTERVAL);
             }
             else
             {
-                Serial.println("Signal ignored - too soon after last receive");
+                //Serial.println("Signal ignored - too soon after last receive");
             }
             delete pdec;
         }
@@ -185,6 +185,7 @@ void RFReceiver::storeSignalParams(Decoder *pdec)
         Serial.println();
         */
     // 确保EEPROM写入成功
+    /*
     if (!EEPROMManager::writeData(FIRST_ADDRESS_FOR_RF_SIGNAL, (uint8_t *)&lastReceivedParams, sizeof(RFParams)))
     {
         Serial.println("Failed to save EEPROM data");
@@ -192,9 +193,10 @@ void RFReceiver::storeSignalParams(Decoder *pdec)
     }
 
     Serial.println("EEPROM data saved successfully");
+    */
     // 增加调试信息
-    Serial.printf("Data length: %d, Bits: %d, Encoding: %d\n",
-                  lastReceivedParams.dataLength,
-                  lastReceivedParams.nBit,
-                  (int)lastReceivedParams.encoding);
+    // Serial.printf("Data length: %d, Bits: %d, Encoding: %d\n",
+    //               lastReceivedParams.dataLength,
+    //               lastReceivedParams.nBit,
+    //               (int)lastReceivedParams.encoding);
 }

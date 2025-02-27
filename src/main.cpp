@@ -71,11 +71,11 @@ void startTasks() {
 void processCommand(UARTCommand command, bool isComm1)
 {
     // 添加调试输出
-    Serial.print(isComm1 ? "COM1" : "COM0");
-    Serial.print(" rec com: functioncode=");
-    Serial.print(static_cast<int>(command.responseCode));
-    Serial.print(" dataaddress=0x");
-    Serial.println(command.dataAddress, HEX);
+    // Serial.print(isComm1 ? "COM1" : "COM0");
+    // Serial.print(" rec com: functioncode=");
+    // Serial.print(static_cast<int>(command.responseCode));
+    // Serial.print(" dataaddress=0x");
+    // Serial.println(command.dataAddress, HEX);
 
     switch (command.responseCode)
     {
@@ -105,11 +105,11 @@ void processCommand(UARTCommand command, bool isComm1)
         
         
         // 区分处理来源
-        if (isComm1) {
-            // COM1的处理 - 添加打印确认
-            mySerial.print("COM1 recv: 0x");
-            mySerial.println(static_cast<uint8_t>(tempCommand), HEX);
-        }
+        // if (isComm1) {
+        //     // COM1的处理 - 添加打印确认
+        //     mySerial.print("COM1 recv: 0x");
+        //     mySerial.println(static_cast<uint8_t>(tempCommand), HEX);
+        // }
         
         // 所有功能命令都传递给COM0
         SERIAL_MANAGER.serial0Function(tempCommand);
