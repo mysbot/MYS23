@@ -45,6 +45,7 @@ bool SerialManager::updateAll() {
 }
 
 bool SerialManager::updateSerial0() {
+    /*
     static uint32_t lastUpdate = 0;
     const uint32_t minUpdateInterval = 5; // 减少最小更新间隔
     
@@ -53,7 +54,7 @@ bool SerialManager::updateSerial0() {
         return false;
     }
     lastUpdate = currentTime;
-    
+    */
     if (uartComm0) {
         return uartComm0->update();
     }
@@ -61,6 +62,7 @@ bool SerialManager::updateSerial0() {
 }
 
 bool SerialManager::updateSerial1() {
+    /*
     static uint32_t lastUpdate = 0;
     const uint32_t minUpdateInterval = 5; // 减少最小更新间隔
     
@@ -69,7 +71,7 @@ bool SerialManager::updateSerial1() {
         return false;
     }
     lastUpdate = currentTime;
-    
+    */
     if (uartComm1) {
         return uartComm1->update();
     }
