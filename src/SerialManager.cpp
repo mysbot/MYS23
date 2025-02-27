@@ -13,8 +13,8 @@ void SerialManager::init() {
     serialComm1 = new SerialComm(serial1Wrapper);
     
     // 创建UART通信控制器
-    uartComm0 = new UARTComm(serialComm0, BAUDRATE, RX0_PIN, TX0_PIN, false);
-    uartComm1 = new UARTComm(serialComm1, BAUDRATE, RX1_PIN, TX1_PIN, true);
+    uartComm0 = new UARTComm(serialComm0, BAUDRATE, RX0_PIN, TX0_PIN, 0);
+    uartComm1 = new UARTComm(serialComm1, BAUDRATE, RX1_PIN, TX1_PIN, 1);
     
     // 初始化UART通信
     uartComm0->init();
@@ -29,7 +29,7 @@ void SerialManager::init() {
        
         // 发送测试心跳，验证COM1是否正常
         uartComm1->sendHEXheart(0xaa);
-        Serial.println("SerialManager: COM1 send test");
+        mySerial.println("SerialManager: COM1 send test");
     }
 }
 
@@ -41,7 +41,7 @@ bool SerialManager::updateAll() {
     bool serial1Data = updateSerial1();
     
     // 如果任一串口有数据，则返回true
-    return serial0Data || serial1Data;
+    return (serial0Data || serial1Data);
 }
 
 bool SerialManager::updateSerial0() {

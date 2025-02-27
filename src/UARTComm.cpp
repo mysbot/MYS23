@@ -33,8 +33,8 @@ void UARTTransceiver::sendString(const char* str) {
 }
 
 // UARTComm类方法
-UARTComm::UARTComm(SerialComm* serialCommInstance, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, bool isCom1Serial) 
-    : serialComm(serialCommInstance), BaudRate(baudRate), rx_pin(rx_pin), tx_pin(tx_pin), isCom1Serial(isCom1Serial) {
+UARTComm::UARTComm(SerialComm* serialCommInstance, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber) 
+    : serialComm(serialCommInstance), BaudRate(baudRate), rx_pin(rx_pin), tx_pin(tx_pin), comNumber(comNumber) {
     transceiver = new UARTTransceiver(serialCommInstance);
 }
 
@@ -204,7 +204,7 @@ bool UARTComm::processReceivedByte(uint8_t byte) {
                     receivedCRC = (receivedCRC >> 8) | (receivedCRC << 8);
                     
                     // 添加调试输出
-                    if (isCom1Serial) {
+                    if (comNumber==1) {
                         mySerial.print("COM1 CRC: ");
                         mySerial.print(validateFrame() ? "succese" : "failed");
                         mySerial.print(" functioncode: 0x");
@@ -253,7 +253,7 @@ bool UARTComm::validateFrame() {
     bool isValid = verifyCRC(reinterpret_cast<uint8_t*>(&receivedFrame), bytesReceived - 2, receivedCRC);
     
     // 对于COM1串口，记录CRC错误但不中止处理
-    if (!isValid && isCom1Serial) {
+    if (!isValid && (comNumber==1)) {
         // 只对特定类型的命令允许继续处理 (如Function命令)
         if (receivedFrame.functionCode == static_cast<uint8_t>(FunctionCode::FUNCTION)) {
             mySerial.println("COM1 CRC is wrong but Functioncode execute continue");
@@ -480,7 +480,7 @@ UARTCommand UARTComm::handleFunctionCommand(const CommFrame& frame) {
         0,
         false
     };
-    if(!isCom1Serial) {
+    if(!(comNumber==0)) {
         sendResponse(responseFrame);
     }
 

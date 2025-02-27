@@ -74,7 +74,7 @@ private:
 // UART通信核心类
 class UARTComm {
 public:
-    UARTComm(SerialComm* serialComm, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, bool isCom1Serial = false);
+    UARTComm(SerialComm* serialComm, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber = 0);
     void init();
     bool update();
     void setCommandCallback(CommandCallback cb) { callback = cb; }
@@ -93,7 +93,7 @@ private:
     CommandCallback callback = nullptr;
     EEPROMManager eeprommanager;
     uint32_t BaudRate;
-    bool isCom1Serial;
+    uint8_t comNumber;
     uint8_t rx_pin;
     uint8_t tx_pin;
     uint32_t timeout = 30; // 减少超时时间
