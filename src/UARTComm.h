@@ -9,6 +9,9 @@
 // 定义回调函数类型，参数为解析完成的 UARTCommand
 typedef void (*CommandCallback)(UARTCommand);
 
+// 接收缓冲区配置
+#define UART_RX_BUFFER_SIZE 128
+
 // 通信帧结构
 struct CommFrame {
     uint8_t header;
@@ -27,6 +30,13 @@ struct CommFrame {
     CommFrame(uint8_t h, uint8_t s, uint8_t t, uint8_t f, uint8_t dA, uint8_t d, uint16_t c, bool hD)
         : header(h), sourceAddress(s), targetAddress(t), functionCode(f),
           dataAddress(dA), data(d), crc(c), hasData(hD) {}
+
+    // 新增帧校验方法
+    bool isValid() const {
+        return header == FIRSTBYTE && 
+               (sourceAddress == THE_THIRD_PART || sourceAddress == TARGET_ADDRESS) &&
+               targetAddress == ADDmanager.localadd_value;
+    }
 };
 
 // 接收状态枚举
@@ -38,7 +48,27 @@ enum class ReceiveState {
     WAIT_FOR_DATA_ADDRESS,
     WAIT_FOR_DATA,
     WAIT_FOR_CRC,
-    PROCESS_FRAME
+    PROCESS_FRAME,
+    ERROR_RECOVERY  // 新增错误恢复状态
+};
+
+// 串口收发独立封装
+class UARTTransceiver {
+public:
+    UARTTransceiver(SerialComm* serialComm);
+    
+    // 接收方法
+    bool receiveBytes(uint8_t* buffer, uint16_t* bytesRead, uint16_t maxBytes);
+    
+    // 发送方法
+    bool sendBytes(const uint8_t* buffer, uint16_t length);
+    bool sendByte(uint8_t byte);
+    void sendString(const char* str);
+    
+private:
+    SerialComm* serialComm;
+    uint32_t lastSendTime = 0;
+    const unsigned long sendInterval = 10; // 减少发送间隔到10ms
 };
 
 // UART通信核心类
@@ -66,7 +96,12 @@ private:
     bool isCom1Serial;
     uint8_t rx_pin;
     uint8_t tx_pin;
-    uint32_t timeout = 50;
+    uint32_t timeout = 30; // 减少超时时间
+    
+    // 接收缓冲区
+    uint8_t rxBuffer[UART_RX_BUFFER_SIZE];
+    uint16_t rxHead = 0;
+    uint16_t rxTail = 0;
     
     ReceiveState receiveState = ReceiveState::WAIT_FOR_HEADER;
     CommFrame receivedFrame;
@@ -74,6 +109,9 @@ private:
     uint16_t expectedDataLength = 0;
     uint16_t receivedCRC = 0;
     UARTCommand cmd;
+    
+    // 独立的收发器
+    UARTTransceiver* transceiver = nullptr;
     
     // 辅助方法
     UARTCommand executeCommand(const CommFrame& frame);
@@ -92,6 +130,15 @@ private:
     bool waitForBytes(uint16_t numBytes);
     bool frameRequiresData(uint8_t functionCode);
     uint16_t expectedFrameLength();
+    
+    // 新增方法
+    void bufferByte(uint8_t byte);
+    uint8_t readBufferedByte();
+    uint16_t availableBuffered();
+    bool findFrameStart();
+    void resetReceiveState();
+    bool processReceivedByte(uint8_t byte);
+    bool validateFrame();
 };
 
 #endif

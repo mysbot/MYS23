@@ -282,7 +282,6 @@ const uint16_t windowCommandSize = 13;
 // Function to set RF parameters based on RFmode_value
 
 
-
 extern uint8_t RF_buffer[NUM_GROUPS][RF_NUM_DEFAULT];
  // Used to store valid data
 #endif // CONFIG_H

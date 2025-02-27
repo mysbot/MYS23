@@ -1,26 +1,95 @@
 // UARTComm.cpp
 #include "UARTComm.h"
-#include <cstdlib> // For std::atoi
+#include <cstdlib>
 
+// 实现独立的收发器类
+UARTTransceiver::UARTTransceiver(SerialComm* serialComm) : serialComm(serialComm) {}
+
+bool UARTTransceiver::receiveBytes(uint8_t* buffer, uint16_t* bytesRead, uint16_t maxBytes) {
+    *bytesRead = 0;
+    while (serialComm->available() && *bytesRead < maxBytes) {
+        buffer[(*bytesRead)++] = serialComm->read();
+    }
+    return *bytesRead > 0;
+}
+
+bool UARTTransceiver::sendBytes(const uint8_t* buffer, uint16_t length) {
+    // 限制发送频率
+    unsigned long currentTime = millis();
+    if (currentTime - lastSendTime < sendInterval) {
+        vTaskDelay(1);
+    }
+    lastSendTime = millis();
+    
+    return serialComm->writeByte(buffer, length) == length;
+}
+
+bool UARTTransceiver::sendByte(uint8_t byte) {
+    return sendBytes(&byte, 1);
+}
+
+void UARTTransceiver::sendString(const char* str) {
+    serialComm->writeChar(str);
+}
+
+// UARTComm类方法
 UARTComm::UARTComm(SerialComm* serialCommInstance, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, bool isCom1Serial) 
-    : serialComm(serialCommInstance), BaudRate(baudRate), rx_pin(rx_pin), tx_pin(tx_pin), isCom1Serial(isCom1Serial) {}
+    : serialComm(serialCommInstance), BaudRate(baudRate), rx_pin(rx_pin), tx_pin(tx_pin), isCom1Serial(isCom1Serial) {
+    transceiver = new UARTTransceiver(serialCommInstance);
+}
 
 void UARTComm::init() {
     serialComm->begin(BaudRate, rx_pin, tx_pin);
     delay(50);  // 给串口初始化一些时间
     eeprommanager.EEPROMInitialize();
     Serial.println("UARTComm initialized");
+    // 清空缓冲区
+    clearSerialBuffer();
+    rxHead = 0;
+    rxTail = 0;
 }
 
 void UARTComm::clearSerialBuffer() {
     while (serialComm->available()) {
         serialComm->read();
     }
+    // 重置接收状态
+    resetReceiveState();
+}
+
+void UARTComm::resetReceiveState() {
+    receiveState = ReceiveState::WAIT_FOR_HEADER;
+    bytesReceived = 0;
+    receivedCRC = 0;
+    expectedDataLength = 0;
+}
+
+void UARTComm::bufferByte(uint8_t byte) {
+    rxBuffer[rxHead] = byte;
+    rxHead = (rxHead + 1) % UART_RX_BUFFER_SIZE;
+    // 检查缓冲区溢出
+    if (rxHead == rxTail) {
+        // 缓冲区已满，移动尾指针
+        rxTail = (rxTail + 1) % UART_RX_BUFFER_SIZE;
+    }
+}
+
+uint8_t UARTComm::readBufferedByte() {
+    if (rxHead == rxTail) {
+        return 0; // 缓冲区为空
+    }
+    uint8_t byte = rxBuffer[rxTail];
+    rxTail = (rxTail + 1) % UART_RX_BUFFER_SIZE;
+    return byte;
+}
+
+uint16_t UARTComm::availableBuffered() {
+    return (rxHead - rxTail + UART_RX_BUFFER_SIZE) % UART_RX_BUFFER_SIZE;
 }
 
 bool UARTComm::update() {
     static unsigned long lastUpdateTime = 0;
-    const unsigned long updateInterval = 50; // 50ms最小间隔
+    const unsigned long updateInterval = 20; // 减少为20ms
     bool dataProcessed = false;
     
     unsigned long currentTime = millis();
@@ -29,106 +98,172 @@ bool UARTComm::update() {
     }
     lastUpdateTime = currentTime;
     
-    if (!serialComm->available()) {
-        return false;
+    // 从串口读取数据到缓冲区
+    if (serialComm->available()) {
+        uint16_t bytesRead = 0;
+        uint8_t tempBuffer[64]; // 临时缓冲区
+        
+        // 使用收发器读取数据
+        if (transceiver->receiveBytes(tempBuffer, &bytesRead, 64)) {
+            // 将数据存入内部缓冲区
+            for (uint16_t i = 0; i < bytesRead; i++) {
+                bufferByte(tempBuffer[i]);
+            }
+            dataProcessed = true;
+        }
     }
     
-    // 限制单次处理的数据量
-    uint8_t processedBytes = 0;
-    const uint8_t maxBytesToProcess = 32;
+    // 处理缓冲区中的数据
+    uint16_t processedBytes = 0;
+    const uint16_t maxBytesToProcess = 64; // 增加处理字节数
     
-    while (serialComm->available() && processedBytes < maxBytesToProcess) {
-        uint8_t byte = serialComm->read();
+    while (availableBuffered() > 0 && processedBytes < maxBytesToProcess) {
+        uint8_t byte = readBufferedByte();
         processedBytes++;
-        dataProcessed = true;  // 标记已处理数据
+        
+        // 处理接收到的字节
+        if (processReceivedByte(byte)) {
+            dataProcessed = true;
+        }
+    }
+    
+    return dataProcessed;
+}
 
-        switch (receiveState) {
-            case ReceiveState::WAIT_FOR_HEADER:
+bool UARTComm::processReceivedByte(uint8_t byte) {
+    bool frameComplete = false;
+    
+    switch (receiveState) {
+        case ReceiveState::WAIT_FOR_HEADER:
+            if (byte == FIRSTBYTE) {
+                receivedFrame.header = byte;
+                bytesReceived = 1;
+                receiveState = ReceiveState::WAIT_FOR_SOURCE_ADDRESS;
+            }
+            break;
+
+        case ReceiveState::WAIT_FOR_SOURCE_ADDRESS:
+            receivedFrame.sourceAddress = byte;
+            if (receivedFrame.sourceAddress == THE_THIRD_PART || receivedFrame.sourceAddress == TARGET_ADDRESS) {
+                bytesReceived++;
+                receiveState = ReceiveState::WAIT_FOR_TARGET_ADDRESS;
+            } else {
+                // 无效的源地址，尝试恢复
+                if (byte == FIRSTBYTE) {
+                    receivedFrame.header = byte;
+                    bytesReceived = 1;
+                    // 保持在等待源地址状态
+                } else {
+                    receiveState = ReceiveState::WAIT_FOR_HEADER;
+                }
+            }
+            break;
+
+        case ReceiveState::WAIT_FOR_TARGET_ADDRESS:
+            receivedFrame.targetAddress = byte;
+            if (receivedFrame.targetAddress == ADDmanager.localadd_value) {
+                bytesReceived++;
+                receiveState = ReceiveState::WAIT_FOR_FUNCTION_CODE;
+            } else {
+                // 无效的目标地址，尝试恢复
                 if (byte == FIRSTBYTE) {
                     receivedFrame.header = byte;
                     bytesReceived = 1;
                     receiveState = ReceiveState::WAIT_FOR_SOURCE_ADDRESS;
                 } else {
-                    Serial.println("Invalid header byte");
                     receiveState = ReceiveState::WAIT_FOR_HEADER;
-                    cmd = {FunctionCode::C_DEFAULT, INIT_DATA, INIT_DATA};
                 }
-                break;
+            }
+            break;
 
-            case ReceiveState::WAIT_FOR_SOURCE_ADDRESS:
-                receivedFrame.sourceAddress = byte;
-                if (receivedFrame.sourceAddress == THE_THIRD_PART || receivedFrame.sourceAddress == TARGET_ADDRESS) {
-                    bytesReceived++;
-                    receiveState = ReceiveState::WAIT_FOR_TARGET_ADDRESS;
-                } else {
-                    Serial.println("Invalid source address byte");
-                    receiveState = ReceiveState::WAIT_FOR_HEADER;
-                    cmd = {FunctionCode::C_DEFAULT, INIT_DATA, INIT_DATA};
-                }
-                break;
+        case ReceiveState::WAIT_FOR_FUNCTION_CODE:
+            receivedFrame.functionCode = byte;
+            bytesReceived++;
+            expectedDataLength = frameRequiresData(receivedFrame.functionCode) ? 1 : 0;
+            receiveState = ReceiveState::WAIT_FOR_DATA_ADDRESS;
+            break;
 
-            case ReceiveState::WAIT_FOR_TARGET_ADDRESS:
-                receivedFrame.targetAddress = byte;
-                if (receivedFrame.targetAddress == ADDmanager.localadd_value) {
-                    bytesReceived++;
-                    receiveState = ReceiveState::WAIT_FOR_FUNCTION_CODE;
-                } else {
-                    Serial.println("Invalid target address byte");
-                    receiveState = ReceiveState::WAIT_FOR_HEADER;
-                    cmd = {FunctionCode::C_DEFAULT, INIT_DATA, INIT_DATA};
-                }
-                break;
+        case ReceiveState::WAIT_FOR_DATA_ADDRESS:
+            receivedFrame.dataAddress = byte;
+            bytesReceived++;
+            receiveState = (expectedDataLength > 0) ? ReceiveState::WAIT_FOR_DATA : ReceiveState::WAIT_FOR_CRC;
+            break;
 
-            case ReceiveState::WAIT_FOR_FUNCTION_CODE:
-                receivedFrame.functionCode = byte;
+        case ReceiveState::WAIT_FOR_DATA:
+            receivedFrame.data = byte;
+            bytesReceived++;
+            receiveState = ReceiveState::WAIT_FOR_CRC;
+            break;
+
+        case ReceiveState::WAIT_FOR_CRC:
+            if (bytesReceived < expectedFrameLength()) {
+                receivedCRC = (receivedCRC << 8) | byte;
                 bytesReceived++;
-                expectedDataLength = frameRequiresData(receivedFrame.functionCode) ? 1 : 0;
-                receiveState = ReceiveState::WAIT_FOR_DATA_ADDRESS;
-                break;
-
-            case ReceiveState::WAIT_FOR_DATA_ADDRESS:
-                receivedFrame.dataAddress = byte;
-                bytesReceived++;
-                receiveState = (expectedDataLength > 0) ? ReceiveState::WAIT_FOR_DATA : ReceiveState::WAIT_FOR_CRC;
-                break;
-
-            case ReceiveState::WAIT_FOR_DATA:
-                receivedFrame.data = byte;
-                bytesReceived++;
-                receiveState = ReceiveState::WAIT_FOR_CRC;
-                break;
-
-            case ReceiveState::WAIT_FOR_CRC:
-                if (bytesReceived < expectedFrameLength()) {
-                    receivedCRC = (receivedCRC << 8) | byte;
-                    bytesReceived++;
-                    if (bytesReceived >= expectedFrameLength()) {
-                        receivedCRC = (receivedCRC >> 8) | (receivedCRC << 8);
-                        if (verifyCRC(reinterpret_cast<uint8_t*>(&receivedFrame), bytesReceived - 2, receivedCRC)) {
-                            UARTCommand newCmd = executeCommand(receivedFrame);
-                            if (callback) {
-                                callback(newCmd);
-                            }
-                        } else {
-                            Serial.println("CRC verification failed");
-                        }
-                        receiveState = ReceiveState::WAIT_FOR_HEADER;
-                        receivedCRC = 0;
-                        bytesReceived = 0;
+                if (bytesReceived >= expectedFrameLength()) {
+                    // 调整CRC字节序
+                    receivedCRC = (receivedCRC >> 8) | (receivedCRC << 8);
+                    
+                    // 添加调试输出
+                    if (isCom1Serial) {
+                        Serial.print("COM1 验证帧: ");
+                        Serial.print(validateFrame() ? "成功" : "失败");
+                        Serial.print(" 功能码: 0x");
+                        Serial.print(receivedFrame.functionCode, HEX);
+                        Serial.print(" 数据地址: 0x");
+                        Serial.println(receivedFrame.dataAddress, HEX);
                     }
+                    
+                    // 验证CRC
+                    if (validateFrame()) {
+                        UARTCommand newCmd = executeCommand(receivedFrame);
+                        if (callback) {
+                            callback(newCmd);
+                        }
+                        frameComplete = true;
+                    } else {
+                        // CRC验证失败，记录错误，但不打印以减少开销
+                        receiveState = ReceiveState::ERROR_RECOVERY;
+                        return false;
+                    }
+                    
+                    // 重置接收状态，准备接收下一帧
+                    resetReceiveState();
                 }
-                break;
+            }
+            break;
 
-            default:
-                receiveState = ReceiveState::WAIT_FOR_HEADER;
-                bytesReceived = 0;
-                receivedCRC = 0;
-                cmd = {FunctionCode::C_DEFAULT, INIT_DATA, INIT_DATA};
-                break;
+        case ReceiveState::ERROR_RECOVERY:
+            // 尝试恢复同步
+            if (byte == FIRSTBYTE) {
+                receivedFrame.header = byte;
+                bytesReceived = 1;
+                receiveState = ReceiveState::WAIT_FOR_SOURCE_ADDRESS;
+            }
+            break;
+
+        default:
+            resetReceiveState();
+            break;
+    }
+    
+    return frameComplete;
+}
+
+bool UARTComm::validateFrame() {
+    bool isValid = verifyCRC(reinterpret_cast<uint8_t*>(&receivedFrame), bytesReceived - 2, receivedCRC);
+    
+    // 对于COM1串口，记录CRC错误但不中止处理
+    if (!isValid && isCom1Serial) {
+        // 只对特定类型的命令允许继续处理 (如Function命令)
+        if (receivedFrame.functionCode == static_cast<uint8_t>(FunctionCode::FUNCTION)) {
+            Serial.println("COM1 CRC错误但允许继续处理Function命令");
+            // 有效帧的基本检查 - 帧头和地址检查
+            return receivedFrame.header == FIRSTBYTE && 
+                   receivedFrame.targetAddress == ADDmanager.localadd_value;
         }
     }
     
-    return dataProcessed;  // 返回是否处理了数据
+    return isValid;
 }
 
 bool UARTComm::frameRequiresData(uint8_t functionCode) {
@@ -153,8 +288,6 @@ uint16_t UARTComm::expectedFrameLength() {
 
 UARTCommand UARTComm::executeCommand(const CommFrame& frame) {
     switch (frame.functionCode) {
-      // 处理硬件串口的逻辑
-  
         case static_cast<uint8_t>(FunctionCode::READ):
            return handleReadCommand(frame);           
         case static_cast<uint8_t>(FunctionCode::WRITE):
@@ -162,48 +295,41 @@ UARTCommand UARTComm::executeCommand(const CommFrame& frame) {
         case static_cast<uint8_t>(FunctionCode::HEART):
             return handleHeartbeat(frame);             
         case static_cast<uint8_t>(FunctionCode::SUCCESEE):
-            return  {FunctionCode::SUCCESEE,frame.dataAddress,frame.data};
+            return {FunctionCode::SUCCESEE, frame.dataAddress, frame.data};
         case static_cast<uint8_t>(FunctionCode::FAILED):
-            return  {FunctionCode::FAILED,frame.dataAddress,frame.data};
+            return {FunctionCode::FAILED, frame.dataAddress, frame.data};
         case static_cast<uint8_t>(FunctionCode::CONFIRM):
-            return  {FunctionCode::CONFIRM,frame.dataAddress,INIT_DATA};
+            return {FunctionCode::CONFIRM, frame.dataAddress, INIT_DATA};
         case static_cast<uint8_t>(FunctionCode::FUNCTION):
             return handleFunctionCommand(frame); 
         default:
-            return  {FunctionCode::C_DEFAULT,INIT_DATA,INIT_DATA};
+            return {FunctionCode::C_DEFAULT, INIT_DATA, INIT_DATA};
     }
-    
 }
 
 void UARTComm::sendFrame(const CommFrame& frame) {
-    static unsigned long lastSendTime = 0;
-    const unsigned long sendInterval = 20; // 20ms最小发送间隔
-    
-    while (millis() - lastSendTime < sendInterval) {
-        vTaskDelay(1);
-    }
-    lastSendTime = millis();
-    
-    //SerialGuard guard;
     CommFrame frameCopy = frame;
     uint8_t* framePtr = (uint8_t*)&frameCopy;
     frameCopy.crc = calculateCRC(framePtr, frame.hasData ? sizeof(CommFrame) - 4 : sizeof(CommFrame) - 5);
     
     if (frame.hasData) {
-        serialComm->writeByte(framePtr, sizeof(CommFrame) - 4);
+        transceiver->sendBytes(framePtr, sizeof(CommFrame) - 4);
     } else {
-        serialComm->writeByte(framePtr, sizeof(CommFrame) - 5);
+        transceiver->sendBytes(framePtr, sizeof(CommFrame) - 5);
     }
-    //vTaskDelay(xDelay); // 短暂延时确保数据发送
-    serialComm->writeByte((uint8_t*)&frameCopy.crc, 1);
-    serialComm->writeByte((uint8_t*)&frameCopy.crc + 1, 1);
+    
+    uint8_t crcBytes[2];
+    crcBytes[0] = (uint8_t)frameCopy.crc;
+    crcBytes[1] = (uint8_t)(frameCopy.crc >> 8);
+    transceiver->sendBytes(crcBytes, 2);
 }
 
 void UARTComm::sendHEXMessage(uint8_t sourceAddress, uint8_t targetAddress, uint8_t functionCode, uint8_t dataAddress, uint8_t data, bool hasData) {
-     CommFrame frame(FIRSTBYTE, sourceAddress, targetAddress, functionCode, dataAddress, data, 0, hasData);
+    CommFrame frame(FIRSTBYTE, sourceAddress, targetAddress, functionCode, dataAddress, data, 0, hasData);
     sendFrame(frame);
 }
-void UARTComm::sendHEXRead( uint8_t targetAddress,  uint8_t dataAddress, uint8_t data) {
+
+void UARTComm::sendHEXRead(uint8_t targetAddress, uint8_t dataAddress, uint8_t data) {
     CommFrame frame = {
         FIRSTBYTE,
         ADDmanager.localadd_value,
@@ -216,7 +342,8 @@ void UARTComm::sendHEXRead( uint8_t targetAddress,  uint8_t dataAddress, uint8_t
     };
     sendFrame(frame);
 }
-void UARTComm::sendHEXWrite( uint8_t targetAddress,  uint8_t dataAddress, uint8_t data) {
+
+void UARTComm::sendHEXWrite(uint8_t targetAddress, uint8_t dataAddress, uint8_t data) {
     CommFrame frame = {
         FIRSTBYTE,
         ADDmanager.localadd_value,
@@ -229,7 +356,8 @@ void UARTComm::sendHEXWrite( uint8_t targetAddress,  uint8_t dataAddress, uint8_
     };
     sendFrame(frame);
 }
-void UARTComm::sendHEXheart( uint8_t targetAddress) {
+
+void UARTComm::sendHEXheart(uint8_t targetAddress) {
     CommFrame frame = {
         FIRSTBYTE,
         ADDmanager.localadd_value,
@@ -243,7 +371,7 @@ void UARTComm::sendHEXheart( uint8_t targetAddress) {
     sendFrame(frame);
 }
 
-void UARTComm::sendscreenCommand( uint8_t dataAddress) {
+void UARTComm::sendscreenCommand(uint8_t dataAddress) {
     CommFrame frame = {
         FIRSTBYTE,
         0,
@@ -256,7 +384,8 @@ void UARTComm::sendscreenCommand( uint8_t dataAddress) {
     };
     sendFrame(frame);
 }
-void UARTComm::sendHEXfunction( uint8_t targetAddress, uint8_t dataAddress) {
+
+void UARTComm::sendHEXfunction(uint8_t targetAddress, uint8_t dataAddress) {
     CommFrame frame = {
         FIRSTBYTE,
         ADDmanager.localadd_value,
@@ -269,6 +398,7 @@ void UARTComm::sendHEXfunction( uint8_t targetAddress, uint8_t dataAddress) {
     };
     sendFrame(frame);
 }
+
 void UARTComm::sendCharMessage(const char* functionCode) {
     WindowCommand cmd;
     strncpy(cmd.function, functionCode, sizeof(cmd.function) - 1);
@@ -278,28 +408,23 @@ void UARTComm::sendCharMessage(const char* functionCode) {
 
     uint16_t checksum = CRC16::lrc_sum(reinterpret_cast<const uint8_t*>(temp), strlen(temp));
     snprintf(cmd.lrc, sizeof(cmd.lrc), "%03d", checksum);
-
     
     sendCharFrame(cmd);
-   
 }
 
 void UARTComm::sendCharFrame(const WindowCommand& cmd) {
-    SerialGuard guard;
-    //delay(300);
-    serialComm->write(cmd.startByte);
-    serialComm->writeChar(cmd.address);
-    serialComm->writeChar(cmd.function);
-    serialComm->writeChar(cmd.length);
-    serialComm->writeChar(cmd.data);
-    serialComm->writeChar(cmd.lrc);
-    serialComm->write(cmd.endByte);
-    //delay(120);
+    transceiver->sendByte(cmd.startByte);
+    transceiver->sendString(cmd.address);
+    transceiver->sendString(cmd.function);
+    transceiver->sendString(cmd.length);
+    transceiver->sendString(cmd.data);
+    transceiver->sendString(cmd.lrc);
+    transceiver->sendByte(cmd.endByte);
 }
+
 UARTCommand UARTComm::handleReadCommand(const CommFrame& frame) {
     uint8_t data;
-    bool readSuccess=eeprommanager.readData(frame.dataAddress, &data, 1);
-     // Assuming EEPROM.read returns a boolean indicating success
+    bool readSuccess = eeprommanager.readData(frame.dataAddress, &data, 1);
 
     FunctionCode responseCode = readSuccess ? FunctionCode::SUCCESEE : FunctionCode::FAILED;
 
@@ -314,22 +439,19 @@ UARTCommand UARTComm::handleReadCommand(const CommFrame& frame) {
         true
     };
     sendResponse(responseFrame);
-    return  {responseCode,frame.dataAddress,data};
-
-
+    return {responseCode, frame.dataAddress, data};
 }
 
 UARTCommand UARTComm::handleWriteCommand(const CommFrame& frame) { 
-    uint8_t data=frame.data,olddata;
+    uint8_t data = frame.data, olddata;
     bool readSuccess;
     eeprommanager.readData(frame.dataAddress, &olddata, 1);
 
-    if(data!=olddata)
-    {
-    readSuccess=eeprommanager.writeData(frame.dataAddress,&data,1);
+    if(data != olddata) {
+        readSuccess = eeprommanager.writeData(frame.dataAddress, &data, 1);
+    } else {
+        readSuccess = 1;
     }
-    else
-    readSuccess=1;
 
     FunctionCode responseCode = readSuccess ? FunctionCode::SUCCESEE : FunctionCode::FAILED;
 
@@ -344,10 +466,10 @@ UARTCommand UARTComm::handleWriteCommand(const CommFrame& frame) {
         true
     };
     sendResponse(responseFrame);
-    return {responseCode,frame.dataAddress,frame.data};
+    return {responseCode, frame.dataAddress, frame.data};
 }
+
 UARTCommand UARTComm::handleFunctionCommand(const CommFrame& frame) { 
-    
     CommFrame responseFrame = {
         FIRSTBYTE,
         ADDmanager.localadd_value,
@@ -358,11 +480,13 @@ UARTCommand UARTComm::handleFunctionCommand(const CommFrame& frame) {
         0,
         false
     };
-    if(!isCom1Serial)
-    sendResponse(responseFrame);
+    if(!isCom1Serial) {
+        sendResponse(responseFrame);
+    }
 
-    return {FunctionCode::FUNCTION,frame.dataAddress,INIT_DATA};
+    return {FunctionCode::FUNCTION, frame.dataAddress, INIT_DATA};
 }
+
 UARTCommand UARTComm::handleHeartbeat(const CommFrame& frame) {
     CommFrame responseFrame = {
         FIRSTBYTE,
@@ -375,14 +499,14 @@ UARTCommand UARTComm::handleHeartbeat(const CommFrame& frame) {
         true
     };
     //sendResponse(responseFrame);
-    return {FunctionCode::HEART,ADDmanager.windowType_value,VERSION};
+    return {FunctionCode::HEART, ADDmanager.windowType_value, VERSION};
 }
 
-uint16_t UARTComm::calculateCRC(const uint8_t* data,uint16_t length) {
+uint16_t UARTComm::calculateCRC(const uint8_t* data, uint16_t length) {
     return CRC16::crc16_modbus(data, length);
 }
 
-bool UARTComm::verifyCRC(const uint8_t* data,uint16_t length, uint16_t receivedCRC) {
+bool UARTComm::verifyCRC(const uint8_t* data, uint16_t length, uint16_t receivedCRC) {
     uint16_t calculatedCRC = calculateCRC(data, length);
     return receivedCRC == calculatedCRC;
 }

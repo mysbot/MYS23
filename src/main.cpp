@@ -17,30 +17,16 @@ EEPROMManager eeprommanager;
 
 void uartTask(void *parameter)
 {
-    const TickType_t xDelay = pdMS_TO_TICKS(10);
+    const TickType_t xDelay = pdMS_TO_TICKS(5); // 减少任务延时，更频繁地检查
 
     while (true)
     {
-        // 使用计数器限制连续处理次数
-        uint8_t processCount = 0;
-        const uint8_t maxProcessCount = 5;
-
-        while (processCount < maxProcessCount)
-        {
-            if (SERIAL_MANAGER.updateAll())
-            {
-                processCount++;
-            }
-            else
-            {
-                break;
-            }
+        // 连续尝试处理数据，不设处理计数器上限
+        if (!SERIAL_MANAGER.updateAll()) {
+            // 只有当没有数据需要处理时才延时
+            vTaskDelay(xDelay);
         }
-
-        vTaskDelay(xDelay);
     }
-
-    vTaskDelay(pdMS_TO_TICKS(50));
 }
 
 void startTasks() {
@@ -81,6 +67,13 @@ void startTasks() {
 
 void processCommand(UARTCommand command, bool isComm1)
 {
+    // 添加调试输出
+    Serial.print(isComm1 ? "COM1" : "COM0");
+    Serial.print(" 收到命令: 功能码=");
+    Serial.print(static_cast<int>(command.responseCode));
+    Serial.print(" 数据地址=0x");
+    Serial.println(command.dataAddress, HEX);
+
     switch (command.responseCode)
     {
     case FunctionCode::READ:
@@ -106,11 +99,17 @@ void processCommand(UARTCommand command, bool isComm1)
     {
         Command tempCommand = static_cast<Command>(command.dataAddress);
        
-        isTransmitter=true;
+        isTransmitter = true;
+        
+        // 区分处理来源
+        if (isComm1) {
+            // COM1的处理 - 添加打印确认
+            Serial.print("COM1触发功能: 0x");
+            Serial.println(static_cast<uint8_t>(tempCommand), HEX);
+        }
+        
+        // 所有功能命令都传递给COM0
         SERIAL_MANAGER.serial0Function(tempCommand);
-        //windowcontrol.controlBasedOnWindowType(ControlType::COMM1, tempCommand);
-        //windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, tempCommand);
-        //windowcontrol.controlBasedOnWindowType(ControlType::TRANSMITTER, tempCommand);
     }
     break;
 
@@ -143,8 +142,7 @@ void onCommandFromComm1(UARTCommand cmd)
 
 void setup() {
     
-    //comm0.init();
-    //comm1.init();
+    
     SERIAL_MANAGER.init();
     SERIAL_MANAGER.setSerial0Callback(onCommandFromComm0);
     SERIAL_MANAGER.setSerial1Callback(onCommandFromComm1);

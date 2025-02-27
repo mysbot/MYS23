@@ -20,42 +20,69 @@ void SerialManager::init() {
     uartComm0->init();
     uartComm1->init();
     
-    Serial.println("SerialManager 0 initialized");
-    mySerial.println("SerialManager 1 initialized");
+    // 添加更详细的初始化信息
+    Serial.println("SerialManager: COM0初始化完成");
+    mySerial.println("SerialManager: COM1初始化完成");
+    
+    // 测试COM1连接是否正常
+    if (uartComm1) {
+        CommFrame testFrame = {
+            FIRSTBYTE,
+            ADDmanager.localadd_value,
+            0x00,  // 广播地址
+            static_cast<uint8_t>(FunctionCode::HEART),
+            0x00,
+            0x00,
+            0,
+            false
+        };
+        // 发送测试心跳，验证COM1是否正常
+        uartComm1->sendHEXheart(0x00);
+        Serial.println("SerialManager: 发送COM1测试帧");
+    }
 }
 
 bool SerialManager::updateAll() {
     bool hadData = false;
     
-    if (updateSerial0()) {
-        hadData = true;
-    }
+    // 使用非阻塞方式分别更新两个串口
+    bool serial0Data = updateSerial0();
+    bool serial1Data = updateSerial1();
     
-    if (updateSerial1()) {
-        hadData = true;
-    }
-    
-    return hadData;
+    // 如果任一串口有数据，则返回true
+    return serial0Data || serial1Data;
 }
 
 bool SerialManager::updateSerial0() {
     static uint32_t lastUpdate = 0;
-    if (millis() - lastUpdate < 10) { // 最小10ms更新间隔
+    const uint32_t minUpdateInterval = 5; // 减少最小更新间隔
+    
+    uint32_t currentTime = millis();
+    if (currentTime - lastUpdate < minUpdateInterval) {
         return false;
     }
-    lastUpdate = millis();
+    lastUpdate = currentTime;
     
-    return uartComm0->update();
+    if (uartComm0) {
+        return uartComm0->update();
+    }
+    return false;
 }
 
 bool SerialManager::updateSerial1() {
     static uint32_t lastUpdate = 0;
-    if (millis() - lastUpdate < 10) { // 最小10ms更新间隔
+    const uint32_t minUpdateInterval = 5; // 减少最小更新间隔
+    
+    uint32_t currentTime = millis();
+    if (currentTime - lastUpdate < minUpdateInterval) {
         return false;
     }
-    lastUpdate = millis();
+    lastUpdate = currentTime;
     
-    return uartComm1->update();
+    if (uartComm1) {
+        return uartComm1->update();
+    }
+    return false;
 }
 
 void SerialManager::setSerial0Callback(CommandCallback cb) {
