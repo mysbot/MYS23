@@ -205,12 +205,12 @@ bool UARTComm::processReceivedByte(uint8_t byte) {
                     
                     // 添加调试输出
                     if (isCom1Serial) {
-                        Serial.print("COM1 验证帧: ");
-                        Serial.print(validateFrame() ? "成功" : "失败");
-                        Serial.print(" 功能码: 0x");
-                        Serial.print(receivedFrame.functionCode, HEX);
-                        Serial.print(" 数据地址: 0x");
-                        Serial.println(receivedFrame.dataAddress, HEX);
+                        mySerial.print("COM1 CRC: ");
+                        mySerial.print(validateFrame() ? "succese" : "failed");
+                        mySerial.print(" functioncode: 0x");
+                        mySerial.print(receivedFrame.functionCode, HEX);
+                        mySerial.print(" dataaddrese: 0x");
+                        mySerial.println(receivedFrame.dataAddress, HEX);
                     }
                     
                     // 验证CRC
@@ -256,7 +256,7 @@ bool UARTComm::validateFrame() {
     if (!isValid && isCom1Serial) {
         // 只对特定类型的命令允许继续处理 (如Function命令)
         if (receivedFrame.functionCode == static_cast<uint8_t>(FunctionCode::FUNCTION)) {
-            Serial.println("COM1 CRC错误但允许继续处理Function命令");
+            mySerial.println("COM1 CRC is wrong but Functioncode execute continue");
             // 有效帧的基本检查 - 帧头和地址检查
             return receivedFrame.header == FIRSTBYTE && 
                    receivedFrame.targetAddress == ADDmanager.localadd_value;

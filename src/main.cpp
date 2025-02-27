@@ -35,7 +35,7 @@ void startTasks() {
     xTaskCreatePinnedToCore(
         uartTask,
         "UART Task",
-        2048, // 增加堆栈大小
+        4096, // 增加堆栈大小
         NULL,
         3, // 提高任务优先级
         NULL,
@@ -49,7 +49,7 @@ void startTasks() {
         "RF_Receiver_Task",
         8192,
         &rfReceiver,
-        5,  // 提高优先级到5
+        2,  // 提高优先级到5
         NULL,
         1
     );
@@ -107,8 +107,8 @@ void processCommand(UARTCommand command, bool isComm1)
         // 区分处理来源
         if (isComm1) {
             // COM1的处理 - 添加打印确认
-            Serial.print("COM1 recv: 0x");
-            Serial.println(static_cast<uint8_t>(tempCommand), HEX);
+            mySerial.print("COM1 recv: 0x");
+            mySerial.println(static_cast<uint8_t>(tempCommand), HEX);
         }
         
         // 所有功能命令都传递给COM0
