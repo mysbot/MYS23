@@ -259,7 +259,12 @@ struct UARTCommand {
     uint8_t dataAddress;
     uint8_t data;
 };
-
+struct RFCommand
+{
+    Command index;
+    uint8_t data[RF_NUM_DEFAULT];
+    uint8_t group;
+};
 struct ScreenCommand {
     uint8_t startByte = 0x55;
     uint8_t sourceaddress = 0; // 修改为两个字节

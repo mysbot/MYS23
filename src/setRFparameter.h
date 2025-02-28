@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "RF433send.h"
 #include "EEPROMManager.h"
-#include "RFReceiver.h"
+#include "RFStorageManager.h"
 #include "Config.h"
 #include <ctype.h> // 引入ctype库以使用isxdigit函数
 
@@ -27,15 +27,15 @@ const ProtocolParams PROTOCOL_HANS = {39, 5, 8000, 4800, 1500, 360, 720, 0, 0, 7
 const ProtocolParams PROTOCOL_HOPO = {24, 3, 12000, 0, 0, 380, 1200, 0, 0, 380, 12000};
 
 extern const ProtocolParams *txParams;
-extern const ProtocolParams *rxParams;
+//extern const ProtocolParams *rxParams;
 
 class setRFpara
 {
 public:
   void setRFParameters(uint8_t workmode);
-  static uint8_t defaultValues[NUM_GROUPS][RF_NUM_DEFAULT];
-  void generateRandomValues(uint8_t *buffer, uint16_t length, uint8_t fixedLastValue);
-  void initDefaultValues();
+  //static uint8_t defaultValues[NUM_GROUPS][RF_NUM_DEFAULT];
+  //void generateRandomValues(uint8_t *buffer, uint16_t length, uint8_t fixedLastValue);
+  //void initDefaultValues();
 
 private:
   static EEPROMManager eeprommanager;

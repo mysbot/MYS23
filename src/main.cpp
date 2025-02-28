@@ -1,8 +1,7 @@
 #include "RFReceiverTask.h"
-//#include "RFTransmitterTask.h"
-//#include "COMM1.h"
-//#include "COMM0.h"
 #include "SerialManager.h"
+#include "RFTransmitter.h"
+#include "Config.h"
 
 HardwareSerial mySerial(2);
 uint8_t TARGET_ADDRESS = 0XFF;
@@ -10,9 +9,8 @@ uint8_t RF_buffer[NUM_GROUPS][RF_NUM_DEFAULT] = {0};
 address_Manager ADDmanager;
 
 RFReceiver rfReceiver(RF_RECEIVER_PIN);
-//RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN);
 EEPROMManager eeprommanager;
-
+RFTransmitter transmitter(RF_TRANSMITTER_PIN);
 
 
 void startTasks() {
@@ -41,17 +39,19 @@ void startTasks() {
     );
     
     // 发送任务
-    /*
     xTaskCreatePinnedToCore(
-        RFTransmitter::RFTransmitterTask,        
+        [](void* parameter) { 
+            static_cast<RFTransmitter*>(parameter)->update(); 
+        },
         "RF_Transmitter_Task",
         8192,
-        &rfTransmitter,
-        4,  // 发送任务优先级4
+        &transmitter,
+        2,
         NULL,
-        0
+        1
     );
-    */
+    
+    
 }
 
 void processCommand(UARTCommand command, bool isComm1)
@@ -143,6 +143,7 @@ void setup() {
     
     // 初始化RF管理器
     rfReceiver.begin();
+    transmitter.setup();
     
     // 启动任务
     startTasks();
