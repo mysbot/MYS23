@@ -36,12 +36,16 @@ void SerialManager::init() {
 bool SerialManager::updateAll() {
     bool hadData = false;
     
-    // 使用非阻塞方式分别更新两个串口
+         // 使用非阻塞方式分别更新两个串口
     bool serial0Data = updateSerial0();
     bool serial1Data = updateSerial1();
     
     // 如果任一串口有数据，则返回true
     return (serial0Data || serial1Data);
+    
+   
+    
+   
 }
 
 bool SerialManager::updateSerial0() {
@@ -121,5 +125,16 @@ void SerialManager::serial1SendCommand(Command index) {
         } else {
             uartComm1->sendCharMessage(String(static_cast<uint8_t>(index), HEX).c_str());
         }
+    }
+}
+
+// 新增：串口管理任务函数，封装串口更新循环
+void SerialManager::serialManagerTask()
+{
+    const TickType_t delayTime = pdMS_TO_TICKS(5);
+    while(true)
+    {
+        updateAll();
+        vTaskDelay(delayTime);
     }
 }

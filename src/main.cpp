@@ -9,39 +9,25 @@ uint8_t TARGET_ADDRESS = 0XFF;
 uint8_t RF_buffer[NUM_GROUPS][RF_NUM_DEFAULT] = {0};
 address_Manager ADDmanager;
 
-
-
 RFReceiver rfReceiver(RF_RECEIVER_PIN);
 //RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN);
 EEPROMManager eeprommanager;
 
-void uartTask(void *parameter)
-{
-    const TickType_t xDelay = pdMS_TO_TICKS(5); // 减少任务延时，更频繁地检查
 
-    while (true)
-    {
-        // 连续尝试处理数据，不设处理计数器上限
-        if (!SERIAL_MANAGER.updateAll()) {
-            // 只有当没有数据需要处理时才延时
-            vTaskDelay(xDelay);
-        }
-    }
-}
 
 void startTasks() {
-    // 修改UART任务配置
-    
+    // 创建串口更新任务，由 SerialManager 模块内部处理 updateAll()
     xTaskCreatePinnedToCore(
-        uartTask,
-        "UART Task",
-        4096, // 增加堆栈大小
+        [](void* parameter) { SERIAL_MANAGER.serialManagerTask(); },          // 由 SerialManager.cpp 提供
+        "SerialManager_Task",
+        4096,                       // 合适的堆栈大小
+        &SERIAL_MANAGER,            // 传递 SerialManager 实例
+        3,                          // 任务优先级
         NULL,
-        3, // 提高任务优先级
-        NULL,
-        0 // 移至核心0运行
+        0                         // 指定运行核心
     );
-    // 接收任务
+    
+    // 创建RF接收任务
     xTaskCreatePinnedToCore(
         [](void* parameter) { 
             static_cast<RFReceiver*>(parameter)->RFReceiverTask(parameter); 
@@ -49,11 +35,11 @@ void startTasks() {
         "RF_Receiver_Task",
         8192,
         &rfReceiver,
-        2,  // 提高优先级到5
+        2,
         NULL,
         1
     );
-
+    
     // 发送任务
     /*
     xTaskCreatePinnedToCore(
@@ -102,8 +88,6 @@ void processCommand(UARTCommand command, bool isComm1)
     {
         Command tempCommand = static_cast<Command>(command.dataAddress);
        
-        
-        
         // 区分处理来源
         // if (isComm1) {
         //     // COM1的处理 - 添加打印确认
@@ -142,10 +126,7 @@ void onCommandFromComm1(UARTCommand cmd)
     processComm1Command(cmd);
 }
 
-
 void setup() {
-    
-    
     SERIAL_MANAGER.init();
     SERIAL_MANAGER.setSerial0Callback(onCommandFromComm0);
     SERIAL_MANAGER.setSerial1Callback(onCommandFromComm1);
@@ -161,7 +142,6 @@ void setup() {
     //EEPROMManager::EEPROMInitialize();
     
     // 初始化RF管理器
-    
     rfReceiver.begin();
     
     // 启动任务
@@ -174,9 +154,8 @@ void setup() {
 }
 
 void loop() {
-    
-    yield();  // 让出CPU时间
-    vTaskDelay(pdMS_TO_TICKS(10));  // 短暂延时，避免看门狗复位
+    // 主循环无需处理串口更新任务
+    vTaskDelay(pdMS_TO_TICKS(10));
     
     // 可以在这里添加系统状态监控
     static uint32_t lastStatusTime = 0;
@@ -185,5 +164,4 @@ void loop() {
        // Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
         lastStatusTime = millis();
     }
-    
 }
