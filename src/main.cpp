@@ -55,7 +55,7 @@ else
 }
     
 }
-void processCommand(UARTCommand command, bool isComm1)
+void processCommand(UARTCommand command, u_int8_t uartCom)
 {
     // 添加调试输出
     // Serial.print(isComm1 ? "COM1" : "COM0");
@@ -95,9 +95,11 @@ void processCommand(UARTCommand command, bool isComm1)
         //     mySerial.print("COM1 recv: 0x");
         //     mySerial.println(static_cast<uint8_t>(tempCommand), HEX);
         // }
-        
+        windowcontrol.controlBasedOnWindowType(ControlType::COMM1, tempCommand);
+        windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, tempCommand);
+        windowcontrol.controlBasedOnWindowType(ControlType::TRANSMITTER, tempCommand);
         // 所有功能命令都传递给COM0
-        SERIAL_MANAGER.serial0Function(tempCommand);
+        //SERIAL_MANAGER.serial0Function(tempCommand);
     }
     break;
 
@@ -106,25 +108,17 @@ void processCommand(UARTCommand command, bool isComm1)
         break;
     }
 }
-void processComm1Command(UARTCommand command)
-{
-    processCommand(command, true);
-}
 
-void processComm0Command(UARTCommand command)
-{
-    processCommand(command, false);
-}
 void onCommandFromComm0(UARTCommand cmd)
 {
     // 在这里处理comm0过来的命令
-    processComm0Command(cmd);
+    processCommand(cmd, 0);
 }
 
 void onCommandFromComm1(UARTCommand cmd)
 {
     // 在这里处理comm1过来的命令
-    processComm1Command(cmd);
+    processCommand(cmd, 1);
 }
 
 void setup() {
@@ -160,7 +154,7 @@ void setup() {
 void loop() {
     // 主循环无需处理串口更新任务
     vTaskDelay(pdMS_TO_TICKS(10));
-    
+    windowcontrol.ControlUpdate();
     // 可以在这里添加系统状态监控
     static uint32_t lastStatusTime = 0;
     if(millis() - lastStatusTime > 5000) {

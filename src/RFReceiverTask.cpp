@@ -170,7 +170,7 @@ void RFReceiver::processSignalParams(Decoder *pdec)
     }
     else if (ADDmanager.RFpairingMode_value == (u_int8_t)Pairing::PAIR_OUT_TO_WORK && (ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_BOTH || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_RECEIVER || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_HANS || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_HOPO || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_RECEIVER))
     {
-        mySerial.println("compare RF signal .");
+        //mySerial.println("compare RF signal .");
         checkAndExecuteCommand(lastReceivedParams.data, lastReceivedParams.dataLength);
     }
     else
