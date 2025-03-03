@@ -1,5 +1,8 @@
 #include "RFReceiverTask.h"
 #include "SerialManager.h"
+#include "Config.h"
+#include "EEPROMManager.h"
+#include "WindowControl.h"
 
 HardwareSerial mySerial(2);
 uint8_t TARGET_ADDRESS = 0XFF;
@@ -8,6 +11,7 @@ address_Manager ADDmanager;
 
 RFReceiver rfReceiver(RF_RECEIVER_PIN);
 EEPROMManager eeprommanager;
+WindowControl windowcontrol;
 
 
 
@@ -40,7 +44,17 @@ void startTasks() {
     
     
 }
-
+void processRFCommand(RFCommand cmd) {
+    if (cmd.index == Command::RAIN_SIGNAL && ADDmanager.rainSignal_value == static_cast<uint8_t>(rainSignalMode::WIRELESS))
+    SERIAL_MANAGER.serial0Function(Command::RAIN_SIGNAL);
+//;
+else
+{
+    windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, cmd.index);
+    windowcontrol.controlBasedOnWindowType(ControlType::COMM1, cmd.index);
+}
+    
+}
 void processCommand(UARTCommand command, bool isComm1)
 {
     // 添加调试输出
@@ -130,6 +144,9 @@ void setup() {
     
     // 初始化RF管理器
     rfReceiver.begin();
+    rfReceiver.setCommandCallback(processRFCommand);
+    windowcontrol.setup();
+
     
     // 启动任务
     startTasks();
