@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        label {
+            font-size: 18px;
+            margin-right: 10px;
+            display: inline-block;
+            text-align: right;
+            width: 150px;
+        }
+        input[type="text"], select {
+            font-size: 16px;
+            padding: 8px 12px;
+            margin-bottom: 15px;
+            width: 80%;  /* Adjust width to 80% for mobile screens */
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        .button-container {
+            margin-top: 30px;
+        }
+        button {
+            font-size: 16px;
+            padding: 12px 24px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 90%;  /* Buttons take up more space on mobile */
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .highlight {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .highlight:hover {
+            background-color: #45a049;
+        }
+        .danger {
+            background-color: #f44336;
+            color: white;
+        }
+        .danger:hover {
+            background-color: #e53935;
+        }
+        .disabled {
+            background-color: #d3d3d3;
+            color: gray;
+        }
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            max-width: 500px;
+            margin: auto;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;  /* Stack the label and input on top of each other */
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        .form-group label {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;  /* Make inputs and selects take up full width */
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 20px;  /* Smaller title on mobile */
+            }
+            label {
+                font-size: 16px;  /* Smaller labels for mobile */
+                width: 100%;
+                text-align: center;
+            }
+            input[type="text"], select {
+                font-size: 14px;  /* Adjust font size */
+                width: 100%;
+            }
+            button {
+                font-size: 14px;  /* Smaller buttons */
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 18px;  /* Even smaller title for very small screens */
+            }
+            label {
+                font-size: 14px;  /* Adjust label size further for small screens */
+            }
+            input[type="text"], select {
+                font-size: 12px;  /* Further decrease font size */
+                width: 100%;
+            }
+            button {
+                font-size: 14px;  /* Further decrease button size */
+                padding: 10px;
+            }
+        }
+    </style>
+    <title>皇派门窗调试终端</title>
+</head>
+<body>
+
+    <h1 id="headerTitle">皇派门窗MYSV 智能屏专用版</h1>
+
+    <div class="form-container">
+        <!-- Form Fields -->
+        <div class="form-group">
+            <label for="localadd">本地地址:</label>
+            <input type="number" id="localadd" min="0" max="255" disabled>
+        </div>
+        <div class="form-group">
+            <label for="RFworkingMode">工作模式:</label>
+            <select id="RFworkingMode" disabled></select>
+        </div>
+        <div class="form-group">
+            <label for="windowType">门窗型号:</label>
+            <select id="windowType" disabled onchange="handleWindowTypeChange(this.value)">
+                <!-- 选项会通过JavaScript动态填充 -->
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="controlGroup">干接点配对:</label>
+            <select id="controlGroup" disabled></select>
+        </div>
+        <div class="form-group">
+            <label for="RainSignal">风雨感应开关:</label>
+            <select id="RainSignal" disabled></select>
+        </div>
+        <div class="form-group">
+            <label for="RFpairingMode">配对模式:</label>
+            <select id="RFpairingMode" disabled></select>
+        </div>
+        <div class="form-group" id="pairingModeDiv"></div>
+      
+    </div>
+
+    <!-- Buttons -->
+    <div class="button-container">
+        <button class="highlight" onclick="enableEditing()">编辑</button>
+        <button class="highlight" onclick="saveValues()">确认参数</button>
+        <button class="danger" onclick="factoryReset()">恢复出厂设置</button>
+    </div>
+
+    <script>
+        var globalData = {};
+
+        function loadValues() {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    globalData = JSON.parse(xhr.responseText);
+
+                    document.getElementById('localadd').value = globalData.localadd;    
+                    populateSelectOptions('RFworkingMode', globalData.RFworkingModeOptions);
+                    document.getElementById('RFworkingMode').value = globalData.RFworkingMode;
+                    populateSelectOptions('controlGroup', globalData.controlGroupOptions);
+                    document.getElementById('controlGroup').value = globalData.controlGroup;
+                    populateSelectOptions('RFmode', globalData.RFmodeOptions);
+                   // document.getElementById('RFmode').value = globalData.RFmode;
+                    populateSelectOptions('RainSignal', globalData.RainSignalOptions);
+                    document.getElementById('RainSignal').value = globalData.RainSignal;
+                    populateSelectOptions('windowType', globalData.windowTypeOptions);
+                    document.getElementById('windowType').value = globalData.windowType;
+                    
+                    var hexVersion = parseInt(globalData.mysversion).toString(16).toUpperCase();
+                    document.getElementById('headerTitle').innerHTML = '皇派门窗MYSV ' + hexVersion + ' 智能屏专用版';
+                    updateUIBasedOnProtocol(globalData.RFmode);
+
+                    var rfPairingModeSelect = document.getElementById('RFpairingMode');
+                    if (rfPairingModeSelect) {
+                        populateSelectOptions('RFpairingMode', globalData.RFpairingModeOptions);
+                        rfPairingModeSelect.value = globalData.RFpairingMode;
+                    }
+                } else if (xhr.readyState == 4) {
+                    alert('加载数据失败，请稍后重试。');
+                }
+            };
+            xhr.open('GET', '/get_values', true);
+            xhr.send();
+        }
+
+        function populateSelectOptions(selectId, options) {
+            var select = document.getElementById(selectId);
+            if (select) {
+                select.innerHTML = ''; 
+                options.forEach(function(option) {
+                    var opt = document.createElement('option');
+                    opt.value = option.value;
+                    opt.text = option.label;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function updateUIBasedOnProtocol(protocol) {
+            var pairingModeDiv = document.getElementById('pairingModeDiv');
+
+            if (protocol == globalData.HANS_) {
+                pairingModeDiv.innerHTML = '';
+            } else if (protocol == globalData.HOPO_) {
+                pairingModeDiv.innerHTML = "<button onclick='pairChannel(1)'>1组配对</button><button onclick='pairChannel(2)'>2组配对</button>";
+            }
+        }
+		function pairChannel(channel) {
+			var pairingData = {
+				"HOPOtrans": channel
+			};
+
+			console.log("Sending HOPOtrans data: ", pairingData);  // Debug output to check data
+
+			fetch('/set_values', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(pairingData)
+			})
+			.then(response => {
+				if (response.ok) {
+					return response.json();  // Parse response as JSON if status is OK
+				} else {
+					return response.json().then(errData => {
+						throw new Error(errData.message || '配对失败：服务器返回错误');
+					});
+				}
+			})
+			.then(data => {
+				if (data.status === 'success') {
+					alert('配对信号发送成功！');
+					location.reload();  // 重新加载页面以应用设置
+				} else {
+					alert(`配对信号发送失败: ${data.message}`);
+				}
+			})
+			.catch(error => {
+				console.error('配对时出错:', error);
+				alert(`配对失败，请重试！ 错误: ${error.message}`);
+			});
+		}
+        function enableEditing() {
+            document.getElementById('localadd').disabled = false;
+            document.getElementById('RFworkingMode').disabled = false;
+            document.getElementById('controlGroup').disabled = false;
+            document.getElementById('RainSignal').disabled = false;
+            document.getElementById('windowType').disabled = false;
+            document.getElementById('RFpairingMode').disabled = false;
+        }
+
+       function saveValues() {
+			var settingsData = {
+				"localadd": parseInt(document.getElementById('localadd').value, 10),
+				"RFworkingMode": parseInt(document.getElementById('RFworkingMode').value, 10),
+				"controlGroup": parseInt(document.getElementById('controlGroup').value, 10),
+				"RainSignal": parseInt(document.getElementById('RainSignal').value, 10),
+				"windowType": parseInt(document.getElementById('windowType').value, 10),
+				"RFpairingMode": document.getElementById('RFpairingMode') ? parseInt(document.getElementById('RFpairingMode').value, 10) : 0
+			};
+
+			sendDebugLog("Sending settings data: " + JSON.stringify(settingsData));  // Send debug log
+
+			fetch('/set_values', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				 body: JSON.stringify(settingsData)  // 直接发送 settingsData 作为JSON
+			})
+			.then(response => {
+				sendDebugLog("Response status: " + response.status);  // Send debug log
+				if (response.ok) {
+					return response.json();  // Parse response as JSON if status is OK
+				} else {
+					 return response.json().then(errData => {
+                        throw new Error(errData.message || '保存失败：服务器返回错误');
+                    });
+				}
+			})
+			.then(data => {
+				sendDebugLog("Response data: " + JSON.stringify(data));  // Send debug log
+				if (data.status === 'success') {
+                    alert('参数已保存！');
+                    location.reload();  // 重新加载页面以应用设置
+                } else {
+                    alert(`保存失败: ${data.message}`);
+                }
+			})
+			.catch(error => {
+				sendDebugLog('保存参数时出错: ' + error.message);  // Send debug log
+				console.error('保存参数时出错:', error);
+				alert('保存失败，请重试！');
+			});
+		}
+
+
+       function factoryReset() {
+			if (!confirm("您确定要恢复出厂设置吗？所有设置将被重置。")) {
+                return;
+            }
+
+			fetch('/factory-reset', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ reset: true })  // Send a reset flag to the backend
+			})
+			.then(response => {
+				if (response.ok) {
+					return response.json();  // Parse the response if status is OK
+				} else {
+					return response.json().then(errData => {
+								throw new Error(errData.message || '恢复出厂设置失败：服务器返回错误');
+					});
+				}
+			})
+			.then(data => {
+				 if (data.status === 'success') {
+							alert("恢复出厂设置成功!");
+							// ESP会在后端执行重启操作，无需在前端执行其他操作
+						} else {
+							alert(`恢复出厂设置失败: ${data.message}`);
+						}
+			})
+			.catch(error => {
+				console.error("恢复出厂设置时出错:", error);
+				alert('恢复出厂设置失败，请重试！');
+			});
+		}
+
+        function updateUIBasedOnProtocolAndMode(protocol, workMode) {
+            var pairingModeDiv = document.getElementById('pairingModeDiv');
+            var pairingSelect = document.getElementById('RFpairingMode');
+            
+            // 清除现有选项
+            while (pairingSelect.firstChild) {
+                pairingSelect.removeChild(pairingSelect.firstChild);
+            }
+
+            // 基于当前协议和工作模式添加相应的配对选项
+            if (workMode == globalData.HANS_RECEIVER) {
+                addPairingOption(pairingSelect, "HANS频道1配对", globalData.HANS_1);
+                addPairingOption(pairingSelect, "HANS频道2配对", globalData.HANS_2);
+            } else if (workMode == globalData.HOPO_RECEIVER) {
+                addPairingOption(pairingSelect, "HOPO频道1配对", globalData.HOPO_1);
+                addPairingOption(pairingSelect, "HOPO频道2配对", globalData.HOPO_2);
+            }
+            // ... 添加其他工作模式的配对选项 ...
+        }
+
+        function handleWindowTypeChange(windowType) {
+            var rfWorkingMode = document.getElementById('RFworkingMode');
+            
+            // 根据窗口类型自动设置工作模式
+            if ([1,2,5,6].includes(parseInt(windowType))) { // autoliftwindow, autoslidingdoor, skylight, curtain
+                rfWorkingMode.value = "0"; // HANS_RECEIVER
+            } else if ([3,4].includes(parseInt(windowType))) { // outwardwindow, tilt_turnwindow
+                rfWorkingMode.value = "2"; // HOPO_RECEIVER
+            }
+            
+            // 触发工作模式改变事件
+            rfWorkingMode.dispatchEvent(new Event('change'));
+        }
+
+        function sendDebugLog(message) {
+            fetch('/log', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ log: message })
+            });
+        }
+
+        // Initial call to load the data
+        loadValues();
+    </script>
+
+</body>
+</html>

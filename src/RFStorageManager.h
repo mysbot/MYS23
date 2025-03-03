@@ -21,11 +21,12 @@ public:
     bool loadRFData();
     // 保存单个数据包到 EEPROM（这里采用固定偏移计算方式，可按需要修改为查找更新）
     bool saveRFData(RfSendEncoding mode, uint8_t group,  uint8_t* data, uint8_t dataLen);
+    void initRFData(uint8_t group);
 private:
     uint16_t startAddress;
     uint16_t eepromSize;
     void generateRandomValues(uint8_t *buffer, uint16_t length, uint8_t fixedLastValue);
-    void initRFData(uint8_t group);
+   
 };
 
 #endif // RF_STORAGE_MANAGER_H
