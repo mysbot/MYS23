@@ -226,28 +226,28 @@ void RFReceiver::checkAndExecuteCommand(uint8_t *data, uint8_t datalength)
             uint8_t lastByte = checkRFLastByte(data[datalength - 1], RF_buffer[group][datalength - 1]);
             if (lastByte == static_cast<uint8_t>(Command::SCREEN_DOWN))
             {
-                mySerial.println("down button is pressed .");
+                //mySerial.println("down button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_DOWN, Command::WINDOW_DOWN, "Down");
             }
             else if (lastByte == static_cast<uint8_t>(Command::SCREEN_UP))
             {
-                mySerial.println("up button is pressed .");
+                //mySerial.println("up button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_UP, Command::WINDOW_UP, "Up");
             }
             else if (lastByte == static_cast<uint8_t>(Command::SCREEN_STOP))
             {
-                mySerial.println("stop button is pressed .");
+                //mySerial.println("stop button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_STOP, Command::WINDOW_STOP, "Stop");
             }
 
             else if (lastByte == static_cast<uint8_t>(Command::CASEMENT_STOP))
             {
-                mySerial.println("zero button is pressed .");
+                //mySerial.println("zero button is pressed .");
                 executeCommand(group + 1, Command::CASEMENT_STOP, Command::CASEMENT_STOP_ALT, "HOPO_Stop");
             }
             else
             {
-                mySerial.printf("Unknown button pressed is %d.", lastByte);
+                //mySerial.printf("Unknown button pressed is %d.", lastByte);
                 receiveCommand.index = Command::C_DEFAULT;
                 receiveCommand.group = INIT_DATA;
             }
@@ -293,7 +293,7 @@ uint8_t RFReceiver::checkRFLastByte(uint8_t lastByte, uint8_t commandlastByte)
         return checkRFLastByteGu(lastByte, commandlastByte);
         */
     default:
-        mySerial.println("initdata RETURN .");
+        //mySerial.println("initdata RETURN .");
         return INIT_DATA;
     }
 }
@@ -305,7 +305,7 @@ uint8_t RFReceiver::checkRFLastByteHans(uint8_t lastByte, uint8_t commandlastByt
 
         if (lastByte == (commandlastByte - 0x3C - 0x11 * (3 - i)))
         {
-            mySerial.printf("HANS MODE RETURN %d.", i);
+            //mySerial.printf("HANS MODE RETURN %d.", i);
             return i;
         }
     }
