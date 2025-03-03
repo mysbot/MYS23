@@ -1,7 +1,5 @@
 #include "RFReceiverTask.h"
 #include "SerialManager.h"
-#include "RFTransmitter.h"
-#include "Config.h"
 
 HardwareSerial mySerial(2);
 uint8_t TARGET_ADDRESS = 0XFF;
@@ -10,7 +8,7 @@ address_Manager ADDmanager;
 
 RFReceiver rfReceiver(RF_RECEIVER_PIN);
 EEPROMManager eeprommanager;
-RFTransmitter transmitter(RF_TRANSMITTER_PIN);
+
 
 
 void startTasks() {
@@ -39,17 +37,6 @@ void startTasks() {
     );
     
     // 发送任务
-    xTaskCreatePinnedToCore(
-        [](void* parameter) { 
-            static_cast<RFTransmitter*>(parameter)->update(); 
-        },
-        "RF_Transmitter_Task",
-        8192,
-        &transmitter,
-        2,
-        NULL,
-        1
-    );
     
     
 }
@@ -143,7 +130,6 @@ void setup() {
     
     // 初始化RF管理器
     rfReceiver.begin();
-    transmitter.setup();
     
     // 启动任务
     startTasks();

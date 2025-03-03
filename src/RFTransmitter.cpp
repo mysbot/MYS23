@@ -28,7 +28,7 @@ void RFTransmitter::rfsend_build(uint8_t rfWorkMode)
         txParams->lo_last,
         txParams->sep,
         txParams->nb_bits);
-    if (tx_whatever->send(txParams->dataLen, RF_buffer[0]))
+    //if (tx_whatever->send(txParams->dataLen, RF_buffer[0]))
         ;
 };
 

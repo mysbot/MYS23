@@ -1,4 +1,3 @@
-
 #include "RFReceiverTask.h"
 
 const char *encoding_names[] = {
@@ -36,7 +35,7 @@ void RFReceiver::RFReceiverTask(void *parameter)
         getRFTrack()->treset();
 
         receiveCommand.index = Command::C_DEFAULT;
-        
+
         while (!getRFTrack()->do_events())
         {
             vTaskDelay(1);
@@ -171,34 +170,35 @@ void RFReceiver::processSignalParams(Decoder *pdec)
     }
     else if (ADDmanager.RFpairingMode_value == (u_int8_t)Pairing::PAIR_OUT_TO_WORK && (ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_BOTH || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_RECEIVER || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_HANS || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_HOPO || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_RECEIVER))
     {
-        checkAndExecuteCommand(lastReceivedParams.data);
+        mySerial.println("compare RF signal .");
+        checkAndExecuteCommand(lastReceivedParams.data, lastReceivedParams.dataLength);
     }
     else
     {
     }
 
+    // Serial.printf("Stored RF Parameters:\n");
     /*
-        Serial.printf("Stored RF Parameters:\n");
-        Serial.printf("mod:%d\n", lastReceivedParams.encoding);
-        Serial.printf("Init seq: %d\n", lastReceivedParams.timings[0]);
-        Serial.printf("first_low: %d\n", lastReceivedParams.timings[1]);
-        Serial.printf("first_high: %d\n", lastReceivedParams.timings[2]);
-        Serial.printf("first_low_ignored: %d\n", lastReceivedParams.timings[3]);
-        Serial.printf("low_short: %d\n", lastReceivedParams.timings[4]);
-        Serial.printf("low_long: %d\n", lastReceivedParams.timings[5]);
-        Serial.printf("high_short: %d\n", lastReceivedParams.timings[6]);
-        Serial.printf("high_long: %d\n", lastReceivedParams.timings[7]);
-        Serial.printf("last_low: %d\n", lastReceivedParams.timings[8]);
-        Serial.printf("seq: %d\n", lastReceivedParams.timings[9]);
+    Serial.printf("mod:%d\n", lastReceivedParams.encoding);
+    Serial.printf("Init seq: %d\n", lastReceivedParams.timings[0]);
+    Serial.printf("first_low: %d\n", lastReceivedParams.timings[1]);
+    Serial.printf("first_high: %d\n", lastReceivedParams.timings[2]);
+    Serial.printf("first_low_ignored: %d\n", lastReceivedParams.timings[3]);
+    Serial.printf("low_short: %d\n", lastReceivedParams.timings[4]);
+    Serial.printf("low_long: %d\n", lastReceivedParams.timings[5]);
+    Serial.printf("high_short: %d\n", lastReceivedParams.timings[6]);
+    Serial.printf("high_long: %d\n", lastReceivedParams.timings[7]);
+    Serial.printf("last_low: %d\n", lastReceivedParams.timings[8]);
+    Serial.printf("seq: %d\n", lastReceivedParams.timings[9]);
+*/
+    // Serial.printf("n bits: %d\n", lastReceivedParams.nBit);
+    // Serial.printf("**%d** Data: \n", lastReceivedParams.dataLength);
+    // for (size_t i = 0; i < lastReceivedParams.dataLength; i++)
+    // {
+    //     Serial.printf("%02X ", lastReceivedParams.data[i]);
+    // }
+    // Serial.println();
 
-        Serial.printf("n bits: %d\n", lastReceivedParams.nBit);
-        Serial.printf("**%d** Data: \n", lastReceivedParams.dataLength);
-        for (size_t i = 0; i < lastReceivedParams.dataLength; i++)
-        {
-            Serial.printf("%02X ", lastReceivedParams.data[i]);
-        }
-        Serial.println();
-        */
     // 确保EEPROM写入成功
     /*
     if (!EEPROMManager::writeData(FIRST_ADDRESS_FOR_RF_SIGNAL, (uint8_t *)&lastReceivedParams, sizeof(RFParams)))
@@ -216,28 +216,33 @@ void RFReceiver::processSignalParams(Decoder *pdec)
     //               (int)lastReceivedParams.encoding);
 }
 
-void RFReceiver::checkAndExecuteCommand(uint8_t *data)
+void RFReceiver::checkAndExecuteCommand(uint8_t *data, uint8_t datalength)
 {
     // 修改循环变量类型为 int16_t 以确保循环可以正确结束
     for (int16_t group = NUM_GROUPS - 1; group >= 0; group--)
     {
-        if (memcmp(data, RF_buffer[group], lastReceivedParams.dataLength - 1) == 0)
+        if (memcmp(data, RF_buffer[group], datalength - 1) == 0)
         {
-            uint8_t lastByte = checkRFLastByte(data[lastReceivedParams.dataLength - 1], RF_buffer[group][lastReceivedParams.dataLength - 1]);
+            uint8_t lastByte = checkRFLastByte(data[datalength - 1], RF_buffer[group][datalength - 1]);
             if (lastByte == static_cast<uint8_t>(Command::SCREEN_DOWN))
             {
+                mySerial.println("down button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_DOWN, Command::WINDOW_DOWN, "Down");
             }
             else if (lastByte == static_cast<uint8_t>(Command::SCREEN_UP))
             {
+                mySerial.println("up button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_UP, Command::WINDOW_UP, "Up");
             }
             else if (lastByte == static_cast<uint8_t>(Command::SCREEN_STOP))
             {
+                mySerial.println("stop button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_STOP, Command::WINDOW_STOP, "Stop");
             }
+
             else if (lastByte == static_cast<uint8_t>(Command::CASEMENT_STOP))
             {
+                mySerial.println("zero button is pressed .");
                 executeCommand(group + 1, Command::CASEMENT_STOP, Command::CASEMENT_STOP_ALT, "HOPO_Stop");
             }
             else
@@ -246,7 +251,25 @@ void RFReceiver::checkAndExecuteCommand(uint8_t *data)
                 receiveCommand.index = Command::C_DEFAULT;
                 receiveCommand.group = INIT_DATA;
             }
+            // 新增：调用回调，回传 receiveCommand
+            if (commandCallback)
+            {
+                commandCallback(receiveCommand);
+            }
             return; // 处理完成后立即返回，防止RF_index被覆盖
+        }
+        else
+        {
+            // mySerial.println("Unknown button pressed,and now RF buffer data is:");
+            // for (size_t i = 0; i < NUM_GROUPS; i++)
+            // {
+
+            //     for (size_t j = 0; j < RF_NUM_DEFAULT; j++)
+            //     {
+            //         mySerial.printf("%02X ", RF_buffer[i][j]);
+            //     }
+            //     mySerial.println();
+            // }
         }
     }
 }
@@ -258,11 +281,11 @@ uint8_t RFReceiver::checkRFLastByte(uint8_t lastByte, uint8_t commandlastByte)
     case RFworkMode::HANS_RECEIVER:
     case RFworkMode::HANS_BOTH:
     case RFworkMode::HANS_HOPO:
-        mySerial.println("HANS MODE RETURN .");
+        // mySerial.println("HANS MODE RETURN .");
         return checkRFLastByteHans(lastByte, commandlastByte);
     case RFworkMode::HOPO_RECEIVER:
     case RFworkMode::HOPO_HANS:
-        mySerial.println("HOPO MODE RETURN .");
+        // mySerial.println("HOPO MODE RETURN .");
         return checkRFLastByteHopo(lastByte);
 
         /*
@@ -270,6 +293,7 @@ uint8_t RFReceiver::checkRFLastByte(uint8_t lastByte, uint8_t commandlastByte)
         return checkRFLastByteGu(lastByte, commandlastByte);
         */
     default:
+        mySerial.println("initdata RETURN .");
         return INIT_DATA;
     }
 }
@@ -278,9 +302,10 @@ uint8_t RFReceiver::checkRFLastByteHans(uint8_t lastByte, uint8_t commandlastByt
 {
     for (uint16_t i = 1; i < 4; i++)
     {
-        // mySerial.printf("HANS MODE RETURN %d.",i);
+
         if (lastByte == (commandlastByte - 0x3C - 0x11 * (3 - i)))
         {
+            mySerial.printf("HANS MODE RETURN %d.", i);
             return i;
         }
     }
@@ -290,7 +315,7 @@ uint8_t RFReceiver::checkRFLastByteHans(uint8_t lastByte, uint8_t commandlastByt
 uint8_t RFReceiver::checkRFLastByteHopo(uint8_t lastByte)
 {
     lastByte &= 0x0F;
-    for (uint16_t i = 1; i < 4; i++)
+    for (uint16_t i = 0; i < 4; i++)
     {
         if (lastByte == (0x08 >> i))
         {
@@ -302,20 +327,22 @@ uint8_t RFReceiver::checkRFLastByteHopo(uint8_t lastByte)
 
 void RFReceiver::executeCommand(uint16_t group, Command screenCmd, Command windowCmd, const char *action)
 {
-    if (group == static_cast<uint8_t>(ControlGroup::GROUP1))
-    {
-        // mySerial.printf("Screen %s button pressed\n", action);
-        receiveCommand.index = screenCmd;
-    }
-    else if (group == static_cast<uint8_t>(ControlGroup::GROUP2))
-    {
-        // mySerial.printf("Window %s button pressed\n", action);
-        receiveCommand.index = windowCmd;
-    }
-    else if (group == static_cast<uint8_t>(ControlGroup::RAINSIGNAL))
+    u_int8_t RFgroup = group%2;
+    
+    if (group >= NUM_GROUPS-2)
     {
         // Handle the full match case
-        // Serial.printf("rain water detected in group %d with action %s.\n", group, action);
+        mySerial.printf("rain water detected in group %d with action %s.\n", group, action);
         receiveCommand.index = Command::RAIN_SIGNAL; // Assign the specific value for full match
+    }
+    else if(RFgroup == 1)
+    {
+        mySerial.printf("Screen %s button pressed\n", action);
+        receiveCommand.index = screenCmd;
+    }
+    else if (RFgroup == 0)
+    {
+        mySerial.printf("Window %s button pressed\n", action);
+        receiveCommand.index = windowCmd;
     }
 }
