@@ -9,7 +9,7 @@ WindowControl::WindowControl()
 
      
 
-void WindowControl::setup(){   
+void WindowControl::begin(){   
      rfTransmitter.setup();
 }
 void WindowControl::ControlUpdate(){

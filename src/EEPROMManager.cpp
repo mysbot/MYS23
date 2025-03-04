@@ -1,6 +1,6 @@
 #include "EEPROMManager.h"
 
-void  EEPROMManager::EEPROMInitialize(){
+void  EEPROMManager::begin(){
   EEPROM.begin(eepromSize);
 }
 bool EEPROMManager::readData(uint16_t startAddress, uint8_t* buffer, uint16_t length) {

@@ -9,7 +9,7 @@
 
 class EEPROMManager {
 public:
-    static void EEPROMInitialize();    
+    static void begin();    
     static bool readData(uint16_t startAddress, uint8_t* buffer, uint16_t length);
     static bool writeData(uint16_t startAddress, uint8_t* data, uint16_t length);
     

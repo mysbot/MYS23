@@ -2,7 +2,7 @@
 
 ButtonOperations::ButtonOperations(uint16_t pinA, uint16_t pinB,uint16_t pinC,uint16_t pinD) : pinA(pinA), pinB(pinB),pinC(pinC),pinD(pinD) {}
 
-void ButtonOperations::ButtonInitialize() {
+void ButtonOperations::begin() {
     pinMode(pinA, INPUT_PULLUP);
     pinMode(pinB, INPUT_PULLUP);
     pinMode(pinC, INPUT_PULLUP);

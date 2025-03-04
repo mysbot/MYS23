@@ -49,7 +49,7 @@ void UARTComm::init()
 {
     serialComm->begin(BaudRate, rx_pin, tx_pin);
     delay(50); // 给串口初始化一些时间
-    eeprommanager.EEPROMInitialize();
+    eeprommanager.begin();
     Serial.println("UARTComm initialized");
     // 清空缓冲区
     clearSerialBuffer();

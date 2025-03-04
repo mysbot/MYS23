@@ -9,7 +9,7 @@ typedef void (*ButtonCallback)();
 class ButtonOperations {
 public:
     ButtonOperations(uint16_t pinA, uint16_t pinB,uint16_t pinC,uint16_t pinD);
-    void ButtonInitialize();    
+    void begin();    
     void onButtonAPressed(ButtonCallback callback);
     void onButtonBPressed(ButtonCallback callback) ;
     void onButtonBShortPressed(ButtonCallback callback) ;

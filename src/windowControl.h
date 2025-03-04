@@ -12,7 +12,7 @@
 class WindowControl {
 public:
     WindowControl();
-    void setup();
+    void begin();
     void controlBasedOnWindowType(ControlType controltype,Command command);
     void ControlUpdate();
    

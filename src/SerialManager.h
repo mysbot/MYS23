@@ -15,7 +15,7 @@ public:
         return instance;
     }
     void serialManagerTask();
-    void init();
+    void begin();
 
     // bool updateSerial2();
     //  设置回调

@@ -36,10 +36,14 @@ bool RFStorageManager::saveRFData(RfSendEncoding mode, uint8_t group, uint8_t *d
     if (!EEPROMManager::writeData(addr, (uint8_t *)&header, sizeof(header)))
     {
         return false;
+    }else{
+        mySerial.println("write header success");
     }
     if (!EEPROMManager::writeData(addr + sizeof(header), data, dataLen))
     {
         return false;
+    }else{
+        mySerial.println("write data success");
     }
     return true;
 }

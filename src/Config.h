@@ -300,13 +300,13 @@ void initializeComponents();
 void updateComponents();
 
 void loadEEPROMSettings();
-void setRelayByWindowType();
+void setRelayByWindowType(address_Manager &manager);
 void setRFWorkModeByWindowType(address_Manager &manager);
 void setRFTransmitterModeByworkmode(address_Manager &manager);
 
 void enterProductionTestMode();
 void endProductionTestMode();
-void handleProductionRFLoop(Command RF_index);
+void handleProductionRFLoop(Command index);
 void handleProductionTestMode();
 
 void startPairingMode(uint16_t mode);
@@ -330,6 +330,7 @@ void updateParameter();
 
 void startTasks();
 
+void setButtonCallbacks();
 
 /****************************************** */
 

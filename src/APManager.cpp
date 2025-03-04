@@ -5,7 +5,7 @@ APManager::APManager(uint16_t port)
 
 void APManager::begin()
 {
-    APmanager.EEPROMInitialize();
+    APmanager.begin();
     seedRandomGenerator();
     generateAPCredentials(ssid, password);
 
@@ -442,7 +442,7 @@ void APManager::handleReset()
     }
 }
 
-void APManager::loop()
+void APManager::update()
 {
     handleReset();
 }

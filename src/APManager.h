@@ -21,7 +21,7 @@ class APManager {
 public:
     APManager(uint16_t port);
     void begin();
-    void loop();
+    void update();
 
 private:
     std::string ssid;

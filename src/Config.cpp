@@ -27,16 +27,20 @@ bool inProductionTestMode = false;
 void initializeComponents()
 {
     // Initialize EEPROM
-    eepromManager.EEPROMInitialize();
+    eepromManager.begin();
     // Initialize serial manager
-    SERIAL_MANAGER.init();
+    SERIAL_MANAGER.begin();
     SERIAL_MANAGER.setSerial0Callback(onCommandFromComm0);
     SERIAL_MANAGER.setSerial1Callback(onCommandFromComm1);
     // Initialize RF receiver
     rfReceiver.begin();
     rfReceiver.setCommandCallback(processRFCommand);
     // Initialize window control
-    windowcontrol.setup();
+    windowcontrol.begin();
+    apManager.begin();
+    // Initialize button operations
+    buttonOperations.begin();
+    
 
     startTasks();
    
@@ -45,7 +49,24 @@ void updateComponents()
 {
     // Update window control
     windowcontrol.ControlUpdate();
+    // Update web server
+    apManager.update();
+    // Update addmanager struct
     updateParameter();
+    setRFWorkModeByWindowType(ADDmanager);
+    setRFTransmitterModeByworkmode(ADDmanager);
+    setRelayByWindowType(ADDmanager);
+//     // Update button operations
+    setButtonCallbacks();
+
+    //heartBeatTimer();
+//     // Update RF paring mode
+    managePairingMode();    
+    checkPairingTimeout();
+//     // Update production test mode
+    handleProductionTestMode();
+    
+
 }
 
 void loadEEPROMSettings()
@@ -275,16 +296,16 @@ void updateParameter()
     eepromManager.readData(ADDmanager.securityAddress, &ADDmanager.Is_security_value, 1);
 }
 
-void setRelayByWindowType()
+void setRelayByWindowType(address_Manager &manager)
 {
     static uint16_t previouswindowType = 0;
-    if (ADDmanager.windowType_value != previouswindowType)
+    if (manager.windowType_value != previouswindowType)
     {
         windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, Command::SCREEN_STOP);
         windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, Command::WINDOW_STOP);
-        previouswindowType = ADDmanager.windowType_value;
+        previouswindowType = manager.windowType_value;
     }
-    switch (static_cast<WindowType>(ADDmanager.windowType_value))
+    switch (static_cast<WindowType>(manager.windowType_value))
     {
     case WindowType::AUTOLIFTWINDOW:
     case WindowType::AUTOSLIDINGDOOR:
@@ -446,7 +467,10 @@ void enterProductionTestMode()
     ADDmanager.RFworkingMode_value = static_cast<uint8_t>(RFworkMode::HANS_BOTH);
     updateAddress(ADDmanager.RFworkingModeAddress, ADDmanager.RFworkingMode_value);
 
-    memcpy(RF_buffer, hansValues, sizeof(RF_buffer));
+    //memcpy(RF_buffer, hansValues, sizeof(RF_buffer));
+    RFStorageManager rfStorageManager(FIRST_ADDRESS_FOR_RF_SIGNAL);
+    rfStorageManager.initRFData(0);
+    rfStorageManager.initRFData(1);
     // 设置产测模式触发标志
     ADDmanager.productionTestModeTriggered = !TURN_OFF;
     updateAddress(PRODUCTION_TEST_MODE_ADDRESS, ADDmanager.productionTestModeTriggered);

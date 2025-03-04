@@ -166,11 +166,20 @@ void RFReceiver::processSignalParams(Decoder *pdec)
     // 将接收到的信号存储到 EEPROM
     if (ADDmanager.RFpairingMode_value > (u_int8_t)Pairing::PAIR_OUT_TO_WORK && ADDmanager.RFpairingMode_value <= (u_int8_t)Pairing::PAIR_OUT_TO_WORK + NUM_GROUPS)
     {
-        rfStorageManager.saveRFData(lastReceivedParams.encoding, ADDmanager.RFpairingMode_value, lastReceivedParams.data, lastReceivedParams.dataLength);
+        mySerial.println("paring RF signal .");
+        if (lastReceivedParams.dataLength >= 3 && lastReceivedParams.dataLength <= RF_NUM_DEFAULT && lastReceivedParams.encoding == RfSendEncoding::TRIBIT)
+        {
+
+            if (rfStorageManager.saveRFData(lastReceivedParams.encoding, ADDmanager.RFpairingMode_value, lastReceivedParams.data, lastReceivedParams.dataLength))
+            {
+                ADDmanager.RFpairingMode_value = static_cast<uint8_t>(Pairing::PAIR_OUT_TO_WORK);
+            }
+            /* code */
+        }
     }
     else if (ADDmanager.RFpairingMode_value == (u_int8_t)Pairing::PAIR_OUT_TO_WORK && (ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_BOTH || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_RECEIVER || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_HANS || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_HOPO || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_RECEIVER))
     {
-        //mySerial.println("compare RF signal .");
+        // mySerial.println("compare RF signal .");
         checkAndExecuteCommand(lastReceivedParams.data, lastReceivedParams.dataLength);
     }
     else
@@ -226,28 +235,28 @@ void RFReceiver::checkAndExecuteCommand(uint8_t *data, uint8_t datalength)
             uint8_t lastByte = checkRFLastByte(data[datalength - 1], RF_buffer[group][datalength - 1]);
             if (lastByte == static_cast<uint8_t>(Command::SCREEN_DOWN))
             {
-                //mySerial.println("down button is pressed .");
+                // mySerial.println("down button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_DOWN, Command::WINDOW_DOWN, "Down");
             }
             else if (lastByte == static_cast<uint8_t>(Command::SCREEN_UP))
             {
-                //mySerial.println("up button is pressed .");
+                // mySerial.println("up button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_UP, Command::WINDOW_UP, "Up");
             }
             else if (lastByte == static_cast<uint8_t>(Command::SCREEN_STOP))
             {
-                //mySerial.println("stop button is pressed .");
+                // mySerial.println("stop button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_STOP, Command::WINDOW_STOP, "Stop");
             }
 
             else if (lastByte == static_cast<uint8_t>(Command::CASEMENT_STOP))
             {
-                //mySerial.println("zero button is pressed .");
+                // mySerial.println("zero button is pressed .");
                 executeCommand(group + 1, Command::CASEMENT_STOP, Command::CASEMENT_STOP_ALT, "HOPO_Stop");
             }
             else
             {
-                //mySerial.printf("Unknown button pressed is %d.", lastByte);
+                // mySerial.printf("Unknown button pressed is %d.", lastByte);
                 receiveCommand.index = Command::C_DEFAULT;
                 receiveCommand.group = INIT_DATA;
             }
@@ -293,7 +302,7 @@ uint8_t RFReceiver::checkRFLastByte(uint8_t lastByte, uint8_t commandlastByte)
         return checkRFLastByteGu(lastByte, commandlastByte);
         */
     default:
-        //mySerial.println("initdata RETURN .");
+        // mySerial.println("initdata RETURN .");
         return INIT_DATA;
     }
 }
@@ -305,7 +314,7 @@ uint8_t RFReceiver::checkRFLastByteHans(uint8_t lastByte, uint8_t commandlastByt
 
         if (lastByte == (commandlastByte - 0x3C - 0x11 * (3 - i)))
         {
-            //mySerial.printf("HANS MODE RETURN %d.", i);
+            // mySerial.printf("HANS MODE RETURN %d.", i);
             return i;
         }
     }
@@ -327,15 +336,15 @@ uint8_t RFReceiver::checkRFLastByteHopo(uint8_t lastByte)
 
 void RFReceiver::executeCommand(uint16_t group, Command screenCmd, Command windowCmd, const char *action)
 {
-    u_int8_t RFgroup = group%2;
-    
-    if (group >= NUM_GROUPS-2)
+    u_int8_t RFgroup = group % 2;
+
+    if (group >= NUM_GROUPS - 2)
     {
         // Handle the full match case
         mySerial.printf("rain water detected in group %d with action %s.\n", group, action);
         receiveCommand.index = Command::RAIN_SIGNAL; // Assign the specific value for full match
     }
-    else if(RFgroup == 1)
+    else if (RFgroup == 1)
     {
         mySerial.printf("Screen %s button pressed\n", action);
         receiveCommand.index = screenCmd;

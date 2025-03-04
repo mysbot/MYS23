@@ -1,6 +1,6 @@
 #include "SerialManager.h"
 
-void SerialManager::init() {
+void SerialManager::begin() {
     // 初始化串口互斥锁
     SERIAL_MUTEX.init();
     
