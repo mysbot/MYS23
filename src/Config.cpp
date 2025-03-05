@@ -16,8 +16,8 @@ RFReceiver rfReceiver(RF_RECEIVER_PIN, ADDmanager);
 SerialManager serialManager(ADDmanager);
 
 HardwareSerial mySerial(2);
+
 uint8_t TARGET_ADDRESS = 0XFF;
-//uint8_t RF_buffer[NUM_GROUPS][RF_NUM_DEFAULT] = {0};
 address_Manager ADDmanager;
 // Variables
 uint32_t pairingStartTime = 0;
@@ -41,10 +41,8 @@ void initializeComponents()
     apManager.begin();
     // Initialize button operations
     buttonOperations.begin();
-    
 
     startTasks();
-   
 }
 void updateComponents()
 {
@@ -54,20 +52,20 @@ void updateComponents()
     apManager.update();
     // Update addmanager struct
     updateParameter();
+    // Update RF transmitter
     setRFWorkModeByWindowType(ADDmanager);
     setRFTransmitterModeByworkmode(ADDmanager);
     setRelayByWindowType(ADDmanager);
-//     // Update button operations
+    // Update button operations
     setButtonCallbacks();
 
-    //heartBeatTimer();
-//     // Update RF paring mode
-    managePairingMode();    
-    checkPairingTimeout();
-//     // Update production test mode
-    handleProductionTestMode();
-    
+    // heartBeatTimer();
 
+    // Update RF paring mode
+    managePairingMode();
+    checkPairingTimeout();
+    // Update production test mode
+    handleProductionTestMode();
 }
 
 void loadEEPROMSettings()
@@ -91,6 +89,45 @@ void loadEEPROMSettings()
     eepromManager.readData(PRODUCTION_TEST_MODE_ADDRESS, &ADDmanager.productionTestModeTriggered, 1);
 }
 
+// 通用的地址更新函数
+void updateAddress(uint8_t address, uint8_t value)
+{
+    uint8_t currentValue;
+    eepromManager.readData(address, &currentValue, 1);
+
+    // 只有在值变更时才写入EEPROM
+    if (currentValue != value)
+    {
+        eepromManager.writeData(address, &value, 1);
+    }
+}
+
+void updateParameter()
+{
+    // Helper lambda for reading and updating data
+    auto readAndUpdate = [](uint8_t address, uint8_t &value, uint8_t defaultValue)
+    {
+        if (!eepromManager.readData(address, &value, 1))
+        {
+            value = defaultValue;
+            updateAddress(address, value);
+        }
+    };
+
+    // Sync all addresses with corresponding default values
+    readAndUpdate(ADDmanager.localAddress, ADDmanager.localadd_value, 0);
+    readAndUpdate(ADDmanager.RFworkingModeAddress, ADDmanager.RFworkingMode_value, static_cast<uint8_t>(RFworkMode::HANS_RECEIVER));
+    // readAndUpdate(ADDmanager.RFmodeAddress, ADDmanager.RFmode_value, RF_HANS_MODE);
+    // readAndUpdate(ADDmanager.RFpairingModeAddress, ADDmanager.RFpairingMode_value, static_cast<uint8_t>(Pairing::PAIR_OUT_TO_WORK));
+    readAndUpdate(ADDmanager.controlGroupAddress, ADDmanager.controlGroup_value, static_cast<uint8_t>(ControlGroup::ALL));
+    readAndUpdate(ADDmanager.windowTypeAddress, ADDmanager.windowType_value, static_cast<uint8_t>(WindowType::CURTAIN));
+    readAndUpdate(ADDmanager.slidingDoorModeAddress, ADDmanager.slidingDoorMode_value, TURN_OFF);
+
+    // Direct reads without updates
+    eepromManager.readData(ADDmanager.rainSignalAddress, &ADDmanager.rainSignal_value, 1);
+    eepromManager.readData(ADDmanager.mutualAddress, &ADDmanager.Is_mutual_value, 1);
+    eepromManager.readData(ADDmanager.securityAddress, &ADDmanager.Is_security_value, 1);
+}
 void heartBeatTimer()
 {
     static uint32_t heartBeatTime = millis();
@@ -187,15 +224,28 @@ inline void setRFTransmitterModeByworkmode(address_Manager &manager)
     lastWorkMode = currentWorkMode;
 }
 
-// 后续在主程序中，根据RFpairingMode_value的改变，决定调用setparameter或清码逻辑
-
-void handleProductionTestMode()
+void setRelayByWindowType(address_Manager &manager)
 {
-    if (inProductionTestMode && (millis() - testModeStartTime >= PAIRING_TIMEOUT / 12))
+    static uint16_t previouswindowType = 0;
+    if (manager.windowType_value != previouswindowType)
     {
-        endProductionTestMode();
+        windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, Command::SCREEN_STOP);
+        windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, Command::WINDOW_STOP);
+        previouswindowType = manager.windowType_value;
+    }
+    switch (static_cast<WindowType>(manager.windowType_value))
+    {
+    case WindowType::AUTOLIFTWINDOW:
+    case WindowType::AUTOSLIDINGDOOR:
+        windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, Command::C_DEFAULT);
+        break;
+
+    default:
+
+        break;
     }
 }
+// 后续在主程序中，根据RFpairingMode_value的改变，决定调用setparameter或清码逻辑
 
 // 通用的配码管理函数
 void managePairingMode()
@@ -250,73 +300,11 @@ void clearPairing()
     RFStorageManager rfStorageManager(FIRST_ADDRESS_FOR_RF_SIGNAL);
     for (size_t i = 0; i < NUM_GROUPS; i++)
     {
-        rfStorageManager.initRFData(i,ADDmanager);
+        rfStorageManager.initRFData(i, ADDmanager);
     }
 
     stopPairingMode();
     rfTransmitter.rfsend_build(ADDmanager.RFworkingMode_value);
-}
-
-// 通用的地址更新函数
-void updateAddress(uint8_t address, uint8_t value)
-{
-    uint8_t currentValue;
-    eepromManager.readData(address, &currentValue, 1);
-
-    // 只有在值变更时才写入EEPROM
-    if (currentValue != value)
-    {
-        eepromManager.writeData(address, &value, 1);
-    }
-}
-
-void updateParameter()
-{
-    // Helper lambda for reading and updating data
-    auto readAndUpdate = [](uint8_t address, uint8_t &value, uint8_t defaultValue)
-    {
-        if (!eepromManager.readData(address, &value, 1))
-        {
-            value = defaultValue;
-            updateAddress(address, value);
-        }
-    };
-
-    // Sync all addresses with corresponding default values
-    readAndUpdate(ADDmanager.localAddress, ADDmanager.localadd_value, 0);
-    readAndUpdate(ADDmanager.RFworkingModeAddress, ADDmanager.RFworkingMode_value, static_cast<uint8_t>(RFworkMode::HANS_RECEIVER));
-    // readAndUpdate(ADDmanager.RFmodeAddress, ADDmanager.RFmode_value, RF_HANS_MODE);
-    // readAndUpdate(ADDmanager.RFpairingModeAddress, ADDmanager.RFpairingMode_value, static_cast<uint8_t>(Pairing::PAIR_OUT_TO_WORK));
-    readAndUpdate(ADDmanager.controlGroupAddress, ADDmanager.controlGroup_value, static_cast<uint8_t>(ControlGroup::ALL));
-    readAndUpdate(ADDmanager.windowTypeAddress, ADDmanager.windowType_value, static_cast<uint8_t>(WindowType::CURTAIN));
-    readAndUpdate(ADDmanager.slidingDoorModeAddress, ADDmanager.slidingDoorMode_value, TURN_OFF);
-
-    // Direct reads without updates
-    eepromManager.readData(ADDmanager.rainSignalAddress, &ADDmanager.rainSignal_value, 1);
-    eepromManager.readData(ADDmanager.mutualAddress, &ADDmanager.Is_mutual_value, 1);
-    eepromManager.readData(ADDmanager.securityAddress, &ADDmanager.Is_security_value, 1);
-}
-
-void setRelayByWindowType(address_Manager &manager)
-{
-    static uint16_t previouswindowType = 0;
-    if (manager.windowType_value != previouswindowType)
-    {
-        windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, Command::SCREEN_STOP);
-        windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, Command::WINDOW_STOP);
-        previouswindowType = manager.windowType_value;
-    }
-    switch (static_cast<WindowType>(manager.windowType_value))
-    {
-    case WindowType::AUTOLIFTWINDOW:
-    case WindowType::AUTOSLIDINGDOOR:
-        windowcontrol.controlBasedOnWindowType(ControlType::RELAY_CONTROL, Command::C_DEFAULT);
-        break;
-
-    default:
-
-        break;
-    }
 }
 
 void onCommandFromComm0(UARTCommand cmd)
@@ -458,6 +446,13 @@ void processRFCommand(RFCommand cmd)
     }
 }
 
+void handleProductionTestMode()
+{
+    if (inProductionTestMode && (millis() - testModeStartTime >= PAIRING_TIMEOUT / 12))
+    {
+        endProductionTestMode();
+    }
+}
 // 进入产测模式
 void enterProductionTestMode()
 {
@@ -468,10 +463,10 @@ void enterProductionTestMode()
     ADDmanager.RFworkingMode_value = static_cast<uint8_t>(RFworkMode::HANS_BOTH);
     updateAddress(ADDmanager.RFworkingModeAddress, ADDmanager.RFworkingMode_value);
 
-    //memcpy(RF_buffer, hansValues, sizeof(RF_buffer));
+    // memcpy(RF_buffer, hansValues, sizeof(RF_buffer));
     RFStorageManager rfStorageManager(FIRST_ADDRESS_FOR_RF_SIGNAL);
-    rfStorageManager.initRFData((uint8_t)Pairing::HANS_1-1,ADDmanager);
-    rfStorageManager.initRFData((uint8_t)Pairing::HANS_2-1,ADDmanager);
+    rfStorageManager.initRFData((uint8_t)Pairing::HANS_1 - 1, ADDmanager);
+    rfStorageManager.initRFData((uint8_t)Pairing::HANS_2 - 1, ADDmanager);
     // 设置产测模式触发标志
     ADDmanager.productionTestModeTriggered = !TURN_OFF;
     updateAddress(PRODUCTION_TEST_MODE_ADDRESS, ADDmanager.productionTestModeTriggered);
@@ -506,9 +501,9 @@ void startTasks()
         [](void *parameter)
         { serialManager.serialManagerTask(); }, // 由 SerialManager.cpp 提供
         "SerialManager_Task",
-        4096,            // 合适的堆栈大小
+        4096,           // 合适的堆栈大小
         &serialManager, // 传递 SerialManager 实例
-        3,               // 任务优先级
+        3,              // 任务优先级
         NULL,
         0 // 指定运行核心
     );

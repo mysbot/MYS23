@@ -31,15 +31,7 @@ struct CommFrame
     CommFrame(uint8_t h, uint8_t s, uint8_t t, uint8_t f, uint8_t dA, uint8_t d, uint16_t c, bool hD)
         : header(h), sourceAddress(s), targetAddress(t), functionCode(f),
           dataAddress(dA), data(d), crc(c), hasData(hD) {}
-/*
-    // 新增帧校验方法
-    bool isValid() const
-    {
-        return header == FIRSTBYTE &&
-               (sourceAddress == THE_THIRD_PART || sourceAddress == TARGET_ADDRESS) &&
-               targetAddress == ADDmanager.localadd_value;
-    }
-               */
+
 };
 
 // 接收状态枚举
