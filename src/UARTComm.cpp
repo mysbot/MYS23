@@ -39,12 +39,16 @@ void UARTTransceiver::sendString(const char *str)
 }
 
 // UARTComm类方法
-UARTComm::UARTComm(SerialComm *serialCommInstance, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber, address_Manager &AddManager)
-    : serialComm(serialCommInstance), BaudRate(baudRate), rx_pin(rx_pin), tx_pin(tx_pin), comNumber(comNumber), AddManager(AddManager)
+// UARTComm::UARTComm(SerialComm *serialCommInstance, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber, address_Manager &AddManager)
+//     : serialComm(serialCommInstance), BaudRate(baudRate), rx_pin(rx_pin), tx_pin(tx_pin), comNumber(comNumber), AddManager(AddManager)
+// {
+//     transceiver = new UARTTransceiver(serialCommInstance);
+// }
+UARTComm::UARTComm(SerialComm *serialCommInstance, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber )
+    : serialComm(serialCommInstance), BaudRate(baudRate), rx_pin(rx_pin), tx_pin(tx_pin), comNumber(comNumber) 
 {
     transceiver = new UARTTransceiver(serialCommInstance);
 }
-
 void UARTComm::init()
 {
     serialComm->begin(BaudRate, rx_pin, tx_pin);

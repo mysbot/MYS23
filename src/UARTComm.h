@@ -73,7 +73,8 @@ private:
 class UARTComm
 {
 public:
-    UARTComm(SerialComm *serialComm, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber , address_Manager &AddManager );
+    //UARTComm(SerialComm *serialComm, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber , address_Manager &AddManager );
+    UARTComm(SerialComm *serialComm, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber );
     void init();
     bool update();
     void setCommandCallback(CommandCallback cb) { callback = cb; }
@@ -88,7 +89,7 @@ public:
     void sendscreenCommand(uint8_t dataAddress);
 
 private:
-    address_Manager AddManager;
+    //address_Manager AddManager;
     SerialComm *serialComm;
     CommandCallback callback = nullptr;
     EEPROMManager eeprommanager;

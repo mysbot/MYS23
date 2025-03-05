@@ -8,12 +8,17 @@
 #include "Button_Operations.h"
 // Class Instances
 ButtonOperations buttonOperations(BUTTON_MODE, BUTTON_UP, BUTTON_DOWN, BUTTON_STOP);
-RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN, ADDmanager);
+//RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN, ADDmanager);
+RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN);
 EEPROMManager eepromManager;
-APManager apManager(80, ADDmanager);
-WindowControl windowcontrol(ADDmanager);
-RFReceiver rfReceiver(RF_RECEIVER_PIN, ADDmanager);
-SerialManager serialManager(ADDmanager);
+// APManager apManager(80, ADDmanager);
+// WindowControl windowcontrol(ADDmanager);
+// RFReceiver rfReceiver(RF_RECEIVER_PIN, ADDmanager);
+// SerialManager serialManager(ADDmanager);
+ APManager apManager(80);
+WindowControl windowcontrol;
+RFReceiver rfReceiver(RF_RECEIVER_PIN);
+SerialManager serialManager;
 
 HardwareSerial mySerial(2);
 

@@ -11,13 +11,14 @@
 class WindowControl
 {
 public:
-    WindowControl(address_Manager &ADDmanager);
+    //WindowControl(address_Manager &ADDmanager);
+    WindowControl();
     void begin();
     void controlBasedOnWindowType(ControlType controltype, Command command);
     void ControlUpdate();
 
 private:
-    address_Manager AddManager;
+    //address_Manager AddManager;
     RelayControl relayControl;   // Relay control object
     RFTransmitter rfTransmitter; // RF transmitter object
     SerialManager serialManager;

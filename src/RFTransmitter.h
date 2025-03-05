@@ -13,7 +13,8 @@
 class RFTransmitter
 {
 public:
-    RFTransmitter(uint16_t outputPin, address_Manager &ADDmanager);
+    //RFTransmitter(uint16_t outputPin, address_Manager &ADDmanager);
+    RFTransmitter(uint16_t outputPin);
     void setup();
     void sendCode(Command index, uint8_t *data, uint8_t group);
     void update(); // 新增：用于处理非阻塞发送
@@ -21,7 +22,7 @@ public:
 
 private:
     uint16_t outputPin;
-    address_Manager AddManager;
+    //address_Manager AddManager;
     RFStorageManager rfStorageManager = RFStorageManager(FIRST_ADDRESS_FOR_RF_SIGNAL);
     RfSend *tx_whatever;
     void prepareSendDataHans(uint8_t *send_data, uint8_t *data, uint16_t temp);

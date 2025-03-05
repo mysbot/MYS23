@@ -1,8 +1,9 @@
 #include "SerialManager.h"
-SerialManager::SerialManager( address_Manager &AddManager)
-:AddManager(AddManager)
-{
-};
+// SerialManager::SerialManager( address_Manager &AddManager)
+// :AddManager(AddManager)
+// {
+// };
+SerialManager::SerialManager(){};
 void SerialManager::begin()
 {
     // 初始化串口互斥锁
@@ -17,8 +18,10 @@ void SerialManager::begin()
     serialComm1 = new SerialComm(serial1Wrapper);
 
     // 创建UART通信控制器
-    uartComm0 = new UARTComm(serialComm0, BAUDRATE, RX0_PIN, TX0_PIN, 0, ADDmanager);
-    uartComm1 = new UARTComm(serialComm1, BAUDRATE, RX1_PIN, TX1_PIN, 1, ADDmanager);
+    // uartComm0 = new UARTComm(serialComm0, BAUDRATE, RX0_PIN, TX0_PIN, 0, AddManager);
+    // uartComm1 = new UARTComm(serialComm1, BAUDRATE, RX1_PIN, TX1_PIN, 1, AddManager);
+    uartComm0 = new UARTComm(serialComm0, BAUDRATE, RX0_PIN, TX0_PIN, 0);
+    uartComm1 = new UARTComm(serialComm1, BAUDRATE, RX1_PIN, TX1_PIN, 1);
 
     // 初始化UART通信
     uartComm0->init();

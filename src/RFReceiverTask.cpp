@@ -7,11 +7,14 @@ const char *encoding_names[] = {
     "<unmanaged encoding>"   // Anything else
 };
 
-RFReceiver::RFReceiver(uint8_t rxPin,address_Manager &AddManager)
-    : rxPin(rxPin), AddManager(AddManager),  rfTaskHandle(nullptr)
+// RFReceiver::RFReceiver(uint8_t rxPin,address_Manager &AddManager)
+//     : rxPin(rxPin), AddManager(AddManager),  rfTaskHandle(nullptr)
+// {
+// }
+RFReceiver::RFReceiver(uint8_t rxPin)
+    : rxPin(rxPin), rfTaskHandle(nullptr)
 {
 }
-
 void RFReceiver::begin()
 {
     pinMode(rxPin, INPUT);
@@ -171,10 +174,9 @@ void RFReceiver::processSignalParams(Decoder *pdec)
         {
 
             if (rfStorageManager.saveRFData(lastReceivedParams.encoding, ADDmanager.RFpairingMode_value, lastReceivedParams.data, lastReceivedParams.dataLength))
-            {                
+            {
                 rfStorageManager.initRFData(ADDmanager.RFpairingMode_value, ADDmanager);
                 ADDmanager.RFpairingMode_value = static_cast<uint8_t>(Pairing::PAIR_OUT_TO_WORK);
-
             }
             /* code */
         }
@@ -229,7 +231,7 @@ void RFReceiver::processSignalParams(Decoder *pdec)
 
 void RFReceiver::checkAndExecuteCommand(uint8_t *data, uint8_t datalength)
 {
-    // 修改循环变量类型为 int16_t 以确保循环可以正确结束
+    bool commandExecuted = false; // 标记是否有匹配命令
     for (int16_t group = NUM_GROUPS - 1; group >= 0; group--)
     {
         if (memcmp(data, ADDmanager.RF_buffer[group], datalength - 1) == 0)
@@ -237,50 +239,46 @@ void RFReceiver::checkAndExecuteCommand(uint8_t *data, uint8_t datalength)
             uint8_t lastByte = checkRFLastByte(data[datalength - 1], ADDmanager.RF_buffer[group][datalength - 1]);
             if (lastByte == static_cast<uint8_t>(Command::SCREEN_DOWN))
             {
-                // mySerial.println("down button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_DOWN, Command::WINDOW_DOWN, "Down");
+                commandExecuted = true;
             }
             else if (lastByte == static_cast<uint8_t>(Command::SCREEN_UP))
             {
-                // mySerial.println("up button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_UP, Command::WINDOW_UP, "Up");
+                commandExecuted = true;
             }
             else if (lastByte == static_cast<uint8_t>(Command::SCREEN_STOP))
             {
-                // mySerial.println("stop button is pressed .");
                 executeCommand(group + 1, Command::SCREEN_STOP, Command::WINDOW_STOP, "Stop");
+                commandExecuted = true;
             }
-
             else if (lastByte == static_cast<uint8_t>(Command::CASEMENT_STOP))
             {
-                // mySerial.println("zero button is pressed .");
                 executeCommand(group + 1, Command::CASEMENT_STOP, Command::CASEMENT_STOP_ALT, "HOPO_Stop");
+                commandExecuted = true;
             }
             else
             {
-                // mySerial.printf("Unknown button pressed is %d.", lastByte);
+                // 未匹配到有效命令，则重置为默认值
                 receiveCommand.index = Command::C_DEFAULT;
                 receiveCommand.group = INIT_DATA;
             }
-            // 新增：调用回调，回传 receiveCommand
             if (commandCallback)
             {
                 commandCallback(receiveCommand);
             }
-            return; // 处理完成后立即返回，防止RF_index被覆盖
         }
-        else
+    }
+    if (!commandExecuted)
+    {
+        mySerial.println("Unknown button pressed,and now RF buffer data is:");
+        for (size_t i = 0; i < NUM_GROUPS; i++)
         {
-            mySerial.println("Unknown button pressed,and now RF buffer data is:");
-            for (size_t i = 0; i < NUM_GROUPS; i++)
+            for (size_t j = 0; j < RF_NUM_DEFAULT; j++)
             {
-
-                for (size_t j = 0; j < RF_NUM_DEFAULT; j++)
-                {
-                    mySerial.printf("%02X ", ADDmanager.RF_buffer[i][j]);
-                }
-                mySerial.println();
+                mySerial.printf("%02X ", ADDmanager.RF_buffer[i][j]);
             }
+            mySerial.println();
         }
     }
 }

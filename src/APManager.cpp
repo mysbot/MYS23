@@ -1,8 +1,9 @@
 #include "APManager.h"
 static std::vector<uint8_t> requestBody;
-APManager::APManager(uint16_t port,address_Manager &AddManager)
-    : port(port), server(port),AddManager(AddManager) {}
-
+// APManager::APManager(uint16_t port,address_Manager &AddManager)
+//     : port(port), server(port),AddManager(AddManager) {}
+APManager::APManager(uint16_t port)
+    : port(port), server(port) {}
 void APManager::begin()
 {
     APmanager.begin();

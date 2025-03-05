@@ -9,8 +9,8 @@
 class SerialManager
 {
 public:
-    SerialManager(address_Manager &AddManager);
-
+    SerialManager();
+    //SerialManager(address_Manager &AddManager);
     void serialManagerTask();
     void begin();
 
@@ -31,7 +31,7 @@ public:
     // 串口2控制方法 (备用串口)
     // void serial2SendCommand(Command index);
 private:
-    address_Manager AddManager;
+    //address_Manager AddManager;
     // SerialManager() {} // 私有构造函数确保单例
     bool updateAll();
     bool updateSerial0();

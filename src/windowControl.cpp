@@ -1,11 +1,19 @@
 #include "windowControl.h"
 
 // Constructor
-WindowControl::WindowControl(address_Manager &AddManager)
-    : AddManager(AddManager),                        // Initialize address manager
-      relayControl(RELAY_BUTTON1, RELAY_BUTTON2),    // Initialize relay control
-      rfTransmitter(RF_TRANSMITTER_PIN, ADDmanager), // Initialize RF transmitter
-      serialManager(ADDmanager)                     // Initialize serial manager
+// WindowControl::WindowControl(address_Manager &AddManager)
+//     : AddManager(AddManager),                        // Initialize address manager
+//       relayControl(RELAY_BUTTON1, RELAY_BUTTON2),    // Initialize relay control
+//       rfTransmitter(RF_TRANSMITTER_PIN), // Initialize RF transmitter
+//       //serialManager(ADDmanager)                     // Initialize serial manager
+//
+// {
+// }
+WindowControl::WindowControl()
+    : relayControl(RELAY_BUTTON1, RELAY_BUTTON2), // Initialize relay control
+      rfTransmitter(RF_TRANSMITTER_PIN),          // Initialize RF transmitter
+                                                  // Initialize serial manager
+      serialManager()
 {
 }
 

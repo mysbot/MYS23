@@ -25,7 +25,8 @@ typedef void (*RFCommandCallback)(RFCommand cmd);
 class RFReceiver
 {
 public:
-    RFReceiver(uint8_t rxPin,address_Manager &manager);
+    // RFReceiver(uint8_t rxPin,address_Manager &manager);
+    RFReceiver(uint8_t rxPin);
     void begin();
     void RFReceiverTask(void *parameter);
     void sendStoredSignal();
@@ -42,7 +43,7 @@ private:
 
     RfSend *rfSend;
     Track *rfTrack;
-    address_Manager AddManager;
+    // address_Manager AddManager;
     TaskHandle_t rfTaskHandle;
     volatile bool monitorMode = false;
     RFStorageManager rfStorageManager = RFStorageManager(FIRST_ADDRESS_FOR_RF_SIGNAL);

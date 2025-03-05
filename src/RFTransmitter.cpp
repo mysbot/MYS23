@@ -1,7 +1,11 @@
 #include "RFTransmitter.h"
 setRFpara setRFPara2;
-RFTransmitter::RFTransmitter(uint16_t outputPin,address_Manager &AddManager)
-    : outputPin(outputPin),AddManager(AddManager)
+// RFTransmitter::RFTransmitter(uint16_t outputPin,address_Manager &AddManager)
+//     : outputPin(outputPin),AddManager(AddManager)
+// {
+// }
+RFTransmitter::RFTransmitter(uint16_t outputPin)
+    : outputPin(outputPin)
 {
 }
 void RFTransmitter::rfsend_build(uint8_t rfWorkMode)
