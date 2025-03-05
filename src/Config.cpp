@@ -470,8 +470,8 @@ void enterProductionTestMode()
 
     // memcpy(RF_buffer, hansValues, sizeof(RF_buffer));
     RFStorageManager rfStorageManager(FIRST_ADDRESS_FOR_RF_SIGNAL);
-    rfStorageManager.initRFData((uint8_t)Pairing::HANS_1 - 1, ADDmanager);
-    rfStorageManager.initRFData((uint8_t)Pairing::HANS_2 - 1, ADDmanager);
+    rfStorageManager.initRFData((uint8_t)Pairing::HANS_1 , ADDmanager);
+    rfStorageManager.initRFData((uint8_t)Pairing::HANS_2 , ADDmanager);
     // 设置产测模式触发标志
     ADDmanager.productionTestModeTriggered = !TURN_OFF;
     updateAddress(PRODUCTION_TEST_MODE_ADDRESS, ADDmanager.productionTestModeTriggered);

@@ -11,7 +11,7 @@ RFTransmitter::RFTransmitter(uint16_t outputPin)
 void RFTransmitter::rfsend_build(uint8_t rfWorkMode)
 {
     setRFPara2.setRFParameters(rfWorkMode);
-    rfStorageManager.loadRFData(ADDmanager);
+    rfStorageManager.loadRFData();
     tx_whatever = rfsend_builder(
         RfSendEncoding::TRIBIT,
         outputPin,

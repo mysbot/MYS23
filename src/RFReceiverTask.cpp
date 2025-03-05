@@ -19,7 +19,7 @@ void RFReceiver::begin()
 {
     pinMode(rxPin, INPUT);
     rfTrack = new Track(rxPin);
-    rfStorageManager.loadRFData(ADDmanager);
+    rfStorageManager.loadRFData();
 }
 // 接收任务，运行在 core1
 void RFReceiver::RFReceiverTask(void *parameter)
@@ -175,7 +175,7 @@ void RFReceiver::processSignalParams(Decoder *pdec)
 
             if (rfStorageManager.saveRFData(lastReceivedParams.encoding, ADDmanager.RFpairingMode_value, lastReceivedParams.data, lastReceivedParams.dataLength))
             {
-                rfStorageManager.initRFData(ADDmanager.RFpairingMode_value, ADDmanager);
+                rfStorageManager.loadRFData();
                 ADDmanager.RFpairingMode_value = static_cast<uint8_t>(Pairing::PAIR_OUT_TO_WORK);
             }
             /* code */
@@ -271,15 +271,15 @@ void RFReceiver::checkAndExecuteCommand(uint8_t *data, uint8_t datalength)
     }
     if (!commandExecuted)
     {
-        mySerial.println("Unknown button pressed,and now RF buffer data is:");
-        for (size_t i = 0; i < NUM_GROUPS; i++)
-        {
-            for (size_t j = 0; j < RF_NUM_DEFAULT; j++)
-            {
-                mySerial.printf("%02X ", ADDmanager.RF_buffer[i][j]);
-            }
-            mySerial.println();
-        }
+        // mySerial.println("Unknown button pressed,and now RF buffer data is:");
+        // for (size_t i = 0; i < NUM_GROUPS; i++)
+        // {
+        //     for (size_t j = 0; j < RF_NUM_DEFAULT; j++)
+        //     {
+        //         mySerial.printf("%02X ", ADDmanager.RF_buffer[i][j]);
+        //     }
+        //     mySerial.println();
+        // }
     }
 }
 
@@ -338,7 +338,7 @@ void RFReceiver::executeCommand(uint16_t group, Command screenCmd, Command windo
 {
     u_int8_t RFgroup = group % 2;
 
-    if (group >= NUM_GROUPS - 2)
+    if (group > NUM_GROUPS - 2)
     {
         // Handle the full match case
         mySerial.printf("rain water detected in group %d with action %s.\n", group, action);
