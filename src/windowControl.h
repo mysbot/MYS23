@@ -20,6 +20,7 @@ private:
     address_Manager AddManager;
     RelayControl relayControl;   // Relay control object
     RFTransmitter rfTransmitter; // RF transmitter object
+    SerialManager serialManager;
     EEPROMManager eepromManager;
     bool mutualActive = 0;
     uint32_t mutualstartMillis;

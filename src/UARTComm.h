@@ -31,7 +31,7 @@ struct CommFrame
     CommFrame(uint8_t h, uint8_t s, uint8_t t, uint8_t f, uint8_t dA, uint8_t d, uint16_t c, bool hD)
         : header(h), sourceAddress(s), targetAddress(t), functionCode(f),
           dataAddress(dA), data(d), crc(c), hasData(hD) {}
-
+/*
     // 新增帧校验方法
     bool isValid() const
     {
@@ -39,6 +39,7 @@ struct CommFrame
                (sourceAddress == THE_THIRD_PART || sourceAddress == TARGET_ADDRESS) &&
                targetAddress == ADDmanager.localadd_value;
     }
+               */
 };
 
 // 接收状态枚举
@@ -80,7 +81,7 @@ private:
 class UARTComm
 {
 public:
-    UARTComm(SerialComm *serialComm, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber = 0, address_Manager &AddManager);
+    UARTComm(SerialComm *serialComm, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber , address_Manager &AddManager );
     void init();
     bool update();
     void setCommandCallback(CommandCallback cb) { callback = cb; }

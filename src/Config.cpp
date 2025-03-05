@@ -13,6 +13,7 @@ EEPROMManager eepromManager;
 APManager apManager(80, ADDmanager);
 WindowControl windowcontrol(ADDmanager);
 RFReceiver rfReceiver(RF_RECEIVER_PIN, ADDmanager);
+SerialManager serialManager(ADDmanager);
 
 HardwareSerial mySerial(2);
 uint8_t TARGET_ADDRESS = 0XFF;
@@ -29,9 +30,9 @@ void initializeComponents()
     // Initialize EEPROM
     eepromManager.begin();
     // Initialize serial manager
-    SERIAL_MANAGER.begin();
-    SERIAL_MANAGER.setSerial0Callback(onCommandFromComm0);
-    SERIAL_MANAGER.setSerial1Callback(onCommandFromComm1);
+    serialManager.begin();
+    serialManager.setSerial0Callback(onCommandFromComm0);
+    serialManager.setSerial1Callback(onCommandFromComm1);
     // Initialize RF receiver
     rfReceiver.begin();
     rfReceiver.setCommandCallback(processRFCommand);
@@ -102,22 +103,22 @@ void heartBeatTimer()
         {
 
         case 0:
-            SERIAL_MANAGER.serial0Heart();
+            serialManager.serial0Heart();
             // messege++;
             break;
 
         case 1:
-            SERIAL_MANAGER.serial0Write(ADDmanager.rainSignalAddress, ADDmanager.rainSignal_value);
+            serialManager.serial0Write(ADDmanager.rainSignalAddress, ADDmanager.rainSignal_value);
             messege++;
             break;
 
         case 2:
-            SERIAL_MANAGER.serial0Write(ADDmanager.mutualAddress, ADDmanager.Is_mutual_value);
+            serialManager.serial0Write(ADDmanager.mutualAddress, ADDmanager.Is_mutual_value);
             messege++;
             break;
 
         case 3:
-            SERIAL_MANAGER.serial0Write(ADDmanager.securityAddress, ADDmanager.Is_security_value);
+            serialManager.serial0Write(ADDmanager.securityAddress, ADDmanager.Is_security_value);
             messege = 0;
             break;
 
@@ -395,7 +396,7 @@ void setButtonCallbacks()
     buttonOperations.onButtonBShortPressed([]()
                                            {
         if(ADDmanager.rainSignal_value==static_cast<uint8_t>(rainSignalMode::WIRED))
-          SERIAL_MANAGER.serial0Function(Command::RAIN_SIGNAL);
+          serialManager.serial0Function(Command::RAIN_SIGNAL);
         ; });
     buttonOperations.onButtonDShortPressed([]() {
 
@@ -448,7 +449,7 @@ void processRFCommand(RFCommand cmd)
     }
 
     if (cmd.index == Command::RAIN_SIGNAL && ADDmanager.rainSignal_value == static_cast<uint8_t>(rainSignalMode::WIRELESS))
-        SERIAL_MANAGER.serial0Function(Command::RAIN_SIGNAL);
+        serialManager.serial0Function(Command::RAIN_SIGNAL);
     //;
     else
     {
@@ -503,10 +504,10 @@ void startTasks()
     // 创建串口更新任务，由 SerialManager 模块内部处理 updateAll()
     xTaskCreatePinnedToCore(
         [](void *parameter)
-        { SERIAL_MANAGER.serialManagerTask(); }, // 由 SerialManager.cpp 提供
+        { serialManager.serialManagerTask(); }, // 由 SerialManager.cpp 提供
         "SerialManager_Task",
         4096,            // 合适的堆栈大小
-        &SERIAL_MANAGER, // 传递 SerialManager 实例
+        &serialManager, // 传递 SerialManager 实例
         3,               // 任务优先级
         NULL,
         0 // 指定运行核心

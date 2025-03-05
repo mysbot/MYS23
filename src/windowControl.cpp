@@ -2,10 +2,10 @@
 
 // Constructor
 WindowControl::WindowControl(address_Manager &AddManager)
-    : AddManager(AddManager),                     // Initialize address manager
-      relayControl(RELAY_BUTTON1, RELAY_BUTTON2), // Initialize relay control
-      rfTransmitter(RF_TRANSMITTER_PIN,AddManager)           // Initialize RF transmitter
-
+    : AddManager(AddManager),                        // Initialize address manager
+      relayControl(RELAY_BUTTON1, RELAY_BUTTON2),    // Initialize relay control
+      rfTransmitter(RF_TRANSMITTER_PIN, AddManager), // Initialize RF transmitter
+      serialManager(AddManager)                     // Initialize serial manager
 {
 }
 
@@ -311,12 +311,12 @@ void WindowControl::controlAutoLiftCom(Command command)
   case Command::WINDOW_DOWN:
   case Command::LIGHT_ON:
   case Command::LIGHT_OFF:
-    SERIAL_MANAGER.serial1SendCommand(command); // 发送自动升降窗的命令
+    serialManager.serial1SendCommand(command); // 发送自动升降窗的命令
     break;
 
   case Command::RAIN_SIGNAL:
     if (AddManager.rainSignal_value)
-      SERIAL_MANAGER.serial1SendCommand(Command::WINDOW_UP); // 发送自动升降窗的命令
+      serialManager.serial1SendCommand(Command::WINDOW_UP); // 发送自动升降窗的命令
     break;
   case Command::ISWINDOW_SAFESENSOR:
   {
