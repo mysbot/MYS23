@@ -8,15 +8,15 @@
 #include "Button_Operations.h"
 // Class Instances
 ButtonOperations buttonOperations(BUTTON_MODE, BUTTON_UP, BUTTON_DOWN, BUTTON_STOP);
-RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN);
+RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN, ADDmanager);
 EEPROMManager eepromManager;
-APManager apManager(80);
-WindowControl windowcontrol;
-RFReceiver rfReceiver(RF_RECEIVER_PIN);
+APManager apManager(80, ADDmanager);
+WindowControl windowcontrol(ADDmanager);
+RFReceiver rfReceiver(RF_RECEIVER_PIN, ADDmanager);
 
 HardwareSerial mySerial(2);
 uint8_t TARGET_ADDRESS = 0XFF;
-uint8_t RF_buffer[NUM_GROUPS][RF_NUM_DEFAULT] = {0};
+//uint8_t RF_buffer[NUM_GROUPS][RF_NUM_DEFAULT] = {0};
 address_Manager ADDmanager;
 // Variables
 uint32_t pairingStartTime = 0;
@@ -249,7 +249,7 @@ void clearPairing()
     RFStorageManager rfStorageManager(FIRST_ADDRESS_FOR_RF_SIGNAL);
     for (size_t i = 0; i < NUM_GROUPS; i++)
     {
-        rfStorageManager.initRFData(i);
+        rfStorageManager.initRFData(i,ADDmanager);
     }
 
     stopPairingMode();
@@ -469,8 +469,8 @@ void enterProductionTestMode()
 
     //memcpy(RF_buffer, hansValues, sizeof(RF_buffer));
     RFStorageManager rfStorageManager(FIRST_ADDRESS_FOR_RF_SIGNAL);
-    rfStorageManager.initRFData(0);
-    rfStorageManager.initRFData(1);
+    rfStorageManager.initRFData((uint8_t)Pairing::HANS_1-1,ADDmanager);
+    rfStorageManager.initRFData((uint8_t)Pairing::HANS_2-1,ADDmanager);
     // 设置产测模式触发标志
     ADDmanager.productionTestModeTriggered = !TURN_OFF;
     updateAddress(PRODUCTION_TEST_MODE_ADDRESS, ADDmanager.productionTestModeTriggered);

@@ -19,7 +19,7 @@
 
 class APManager {
 public:
-    APManager(uint16_t port);
+    APManager(uint16_t port,address_Manager &AddManager);
     void begin();
     void update();
 
@@ -32,7 +32,7 @@ private:
     bool shouldReset = false;
     uint32_t resetStartTime = 0;
     uint32_t restDelayTime = 3000;
-    
+    address_Manager AddManager;
     void setupServer();
     void seedRandomGenerator();
     uint16_t getRandomNumber(uint16_t min, uint16_t max);

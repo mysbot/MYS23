@@ -70,6 +70,7 @@ public:
     void sendString(const char *str);
 
 private:
+   
     SerialComm *serialComm;
     uint32_t lastSendTime = 0;
     const unsigned long sendInterval = 10; // 减少发送间隔到10ms
@@ -79,7 +80,7 @@ private:
 class UARTComm
 {
 public:
-    UARTComm(SerialComm *serialComm, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber = 0);
+    UARTComm(SerialComm *serialComm, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber = 0, address_Manager &AddManager);
     void init();
     bool update();
     void setCommandCallback(CommandCallback cb) { callback = cb; }
@@ -94,6 +95,7 @@ public:
     void sendscreenCommand(uint8_t dataAddress);
 
 private:
+    address_Manager AddManager;
     SerialComm *serialComm;
     CommandCallback callback = nullptr;
     EEPROMManager eeprommanager;

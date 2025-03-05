@@ -41,6 +41,9 @@
 #define WINDOWTYPE_ADDRESS 0x64
 #define SECURITY_ADDRESS 0x68
 
+#define RF_NUM_DEFAULT 5
+#define NUM_GROUPS 6
+
 struct address_Manager
 {
 
@@ -67,6 +70,7 @@ struct address_Manager
     uint8_t slidingDoorMode_value = 0; // 0全开/1半开
     uint8_t controlGroup_value = 0;
     uint8_t productionTestModeTriggered = 0; // 新增：产测模式触发标志
+    uint8_t RF_buffer[NUM_GROUPS][RF_NUM_DEFAULT];
 };
 extern address_Manager ADDmanager;
 
@@ -76,12 +80,8 @@ extern address_Manager ADDmanager;
 // #define RF_GU_MODE 2
 // #define RF_ED_MODE 3
 //
-#define RF_BIT_DEFAULT 39
-#define RF_NUM_DEFAULT 5
-// extern uint8_t RF_BIT ;
-// extern uint8_t RF_NUM ;
+//#define RF_BIT_DEFAULT 39
 
-#define NUM_GROUPS 6
 
 #define INIT_DATA 0xFF
 
@@ -292,7 +292,7 @@ const uint16_t screenCommandSize = 7;
 const uint16_t windowCommandSize = 13;
 // Function to set RF parameters based on RFmode_value
 
-extern uint8_t RF_buffer[NUM_GROUPS][RF_NUM_DEFAULT];
+//extern uint8_t RF_buffer[NUM_GROUPS][RF_NUM_DEFAULT];
 
 /****************************************** */
 // Used to store valid data

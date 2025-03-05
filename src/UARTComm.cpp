@@ -39,8 +39,8 @@ void UARTTransceiver::sendString(const char *str)
 }
 
 // UARTComm类方法
-UARTComm::UARTComm(SerialComm *serialCommInstance, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber)
-    : serialComm(serialCommInstance), BaudRate(baudRate), rx_pin(rx_pin), tx_pin(tx_pin), comNumber(comNumber)
+UARTComm::UARTComm(SerialComm *serialCommInstance, uint32_t baudRate, uint8_t rx_pin, uint8_t tx_pin, uint8_t comNumber, address_Manager &AddManager)
+    : serialComm(serialCommInstance), BaudRate(baudRate), rx_pin(rx_pin), tx_pin(tx_pin), comNumber(comNumber), AddManager(AddManager)
 {
     transceiver = new UARTTransceiver(serialCommInstance);
 }
@@ -284,7 +284,7 @@ bool UARTComm::processReceivedByte(uint8_t byte)
     case ReceiveState::WAIT_FOR_TARGET_ADDRESS:
         receivedFrame.targetAddress = byte;
 
-        if (receivedFrame.targetAddress == ADDmanager.localadd_value)
+        if (receivedFrame.targetAddress == AddManager.localadd_value)
         {
             bytesReceived++;
             receiveState = ReceiveState::WAIT_FOR_FUNCTION_CODE;
@@ -451,7 +451,7 @@ bool UARTComm::validateFrame()
     //         mySerial.println("COM1 CRC is wrong but Functioncode execute continue");
     //         // 有效帧的基本检查 - 帧头和地址检查
     //         return receivedFrame.header == FIRSTBYTE &&
-    //                receivedFrame.targetAddress == ADDmanager.localadd_value;
+    //                receivedFrame.targetAddress == AddManager.localadd_value;
     //     }
     // }
 
@@ -535,7 +535,7 @@ void UARTComm::sendHEXRead(uint8_t targetAddress, uint8_t dataAddress, uint8_t d
 {
     CommFrame frame = {
         FIRSTBYTE,
-        ADDmanager.localadd_value,
+        AddManager.localadd_value,
         targetAddress,
         static_cast<uint8_t>(FunctionCode::READ),
         dataAddress,
@@ -549,7 +549,7 @@ void UARTComm::sendHEXWrite(uint8_t targetAddress, uint8_t dataAddress, uint8_t 
 {
     CommFrame frame = {
         FIRSTBYTE,
-        ADDmanager.localadd_value,
+        AddManager.localadd_value,
         targetAddress,
         static_cast<uint8_t>(FunctionCode::WRITE),
         dataAddress,
@@ -563,10 +563,10 @@ void UARTComm::sendHEXheart(uint8_t targetAddress)
 {
     CommFrame frame = {
         FIRSTBYTE,
-        ADDmanager.localadd_value,
+        AddManager.localadd_value,
         targetAddress,
         static_cast<uint8_t>(FunctionCode::HEART),
-        ADDmanager.windowType_value,
+        AddManager.windowType_value,
         VERSION,
         0,
         true};
@@ -591,7 +591,7 @@ void UARTComm::sendHEXfunction(uint8_t targetAddress, uint8_t dataAddress)
 {
     CommFrame frame = {
         FIRSTBYTE,
-        ADDmanager.localadd_value,
+        AddManager.localadd_value,
         targetAddress,
         static_cast<uint8_t>(FunctionCode::FUNCTION),
         dataAddress,
@@ -635,7 +635,7 @@ UARTCommand UARTComm::handleReadCommand(const CommFrame &frame)
 
     CommFrame responseFrame = {
         FIRSTBYTE,
-        ADDmanager.localadd_value,
+        AddManager.localadd_value,
         frame.sourceAddress,
         static_cast<uint8_t>(responseCode),
         frame.dataAddress,
@@ -665,7 +665,7 @@ UARTCommand UARTComm::handleWriteCommand(const CommFrame &frame)
 
     CommFrame responseFrame = {
         FIRSTBYTE,
-        ADDmanager.localadd_value,
+        AddManager.localadd_value,
         frame.sourceAddress,
         static_cast<uint8_t>(responseCode),
         frame.dataAddress,
@@ -680,7 +680,7 @@ UARTCommand UARTComm::handleFunctionCommand(const CommFrame &frame)
 {
     CommFrame responseFrame = {
         FIRSTBYTE,
-        ADDmanager.localadd_value,
+        AddManager.localadd_value,
         frame.sourceAddress,
         static_cast<uint8_t>(FunctionCode::CONFIRM),
         frame.dataAddress,
@@ -699,15 +699,15 @@ UARTCommand UARTComm::handleHeartbeat(const CommFrame &frame)
 {
     CommFrame responseFrame = {
         FIRSTBYTE,
-        ADDmanager.localadd_value,
+        AddManager.localadd_value,
         frame.sourceAddress,
         static_cast<uint8_t>(FunctionCode::HEART),
-        ADDmanager.windowType_value,
+        AddManager.windowType_value,
         VERSION,
         0,
         true};
     // sendResponse(responseFrame);
-    return {FunctionCode::HEART, ADDmanager.windowType_value, VERSION};
+    return {FunctionCode::HEART, AddManager.windowType_value, VERSION};
 }
 
 uint16_t UARTComm::calculateCRC(const uint8_t *data, uint16_t length)

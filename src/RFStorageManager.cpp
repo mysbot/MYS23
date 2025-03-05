@@ -5,7 +5,7 @@ RFStorageManager::RFStorageManager(uint16_t startAddr)
 {
 }
 
-bool RFStorageManager::loadRFData()
+bool RFStorageManager::loadRFData(address_Manager &manager)
 {
     uint16_t addr = startAddress;
 
@@ -15,12 +15,12 @@ bool RFStorageManager::loadRFData()
         RFDataPacketHeader header;
         if (!EEPROMManager::readData(addr, (uint8_t *)&header, sizeof(header)))
         {
-            initRFData(i + 1);
+            initRFData(i + 1, manager);
             break; // 读取失败或到达 EEPROM 尾部
         }
         else if (header.group < NUM_GROUPS && header.dataLen <= RF_NUM_DEFAULT) // 如果头部模式匹配，并且分组号在范围内
         {
-            EEPROMManager::readData(addr + sizeof(header), RF_buffer[header.group], header.dataLen);
+            EEPROMManager::readData(addr + sizeof(header), manager.RF_buffer[header.group], header.dataLen);
         }
         // 移动到下一个数据包位置
         addr += (sizeof(header) + header.dataLen) * i;
@@ -36,17 +36,53 @@ bool RFStorageManager::saveRFData(RfSendEncoding mode, uint8_t group, uint8_t *d
     if (!EEPROMManager::writeData(addr, (uint8_t *)&header, sizeof(header)))
     {
         return false;
-    }else{
+    }
+    else
+    {
         mySerial.println("write header success");
     }
     if (!EEPROMManager::writeData(addr + sizeof(header), data, dataLen))
     {
         return false;
-    }else{
+    }
+    else
+    {
         mySerial.println("write data success");
     }
+
+    // 打印保存的数据
+    const char* modeStr;
+    switch (mode)
+    {
+        case RfSendEncoding::TRIBIT:
+            modeStr = "TRIBIT";
+            break;
+        case RfSendEncoding::TRIBIT_INVERTED:
+            modeStr = "TRIBIT_INVERTED";
+            break;
+        case RfSendEncoding::MANCHESTER:
+            modeStr = "MANCHESTER";
+            break;
+        default:
+            modeStr = "UNKNOWN";
+            break;
+    }
+
+    mySerial.print("Saved mode: ");
+    mySerial.println(modeStr);
+    mySerial.print("Saved data for group ");
+    mySerial.print(group);
+    mySerial.print(": ");
+    for (uint8_t i = 0; i < dataLen; ++i)
+    {
+        mySerial.print(data[i], HEX);
+        mySerial.print(" ");
+    }
+    mySerial.println();
+
     return true;
 }
+
 void RFStorageManager::generateRandomValues(uint8_t *buffer, uint16_t length, uint8_t fixedLastValue)
 {
     for (uint16_t i = 0; i < length - 3; ++i)
@@ -58,7 +94,7 @@ void RFStorageManager::generateRandomValues(uint8_t *buffer, uint16_t length, ui
     buffer[length - 1] = fixedLastValue; // 最后一位固定为指定值
 }
 
-void RFStorageManager::initRFData(uint8_t group)
+void RFStorageManager::initRFData(uint8_t group,address_Manager &manager)
 {
     if (group == static_cast<uint8_t>(Pairing::HANS_1) || group == static_cast<uint8_t>(Pairing::HANS_2) || group == static_cast<uint8_t>(Pairing::HANS_WIRELESS))
     {
@@ -69,8 +105,8 @@ void RFStorageManager::initRFData(uint8_t group)
             {0x4F, 0x27, 0x84, 0x85, 0xE6},
             {0x00, 0x4b, 0xac, 0x21, 0x66},
             {0x4F, 0x27, 0x84, 0x85, 0xE6}};
-        memcpy(RF_buffer[group - 1], hansValues[group - 1], sizeof(hansValues[group - 1]));
-        saveRFData(RfSendEncoding::TRIBIT, group, RF_buffer[group - 1], RF_NUM_DEFAULT);
+        memcpy(manager.RF_buffer[group - 1], hansValues[group - 1], sizeof(hansValues[group - 1]));
+        saveRFData(RfSendEncoding::TRIBIT, group, manager.RF_buffer[group - 1], RF_NUM_DEFAULT);
     }
     else if (group == static_cast<uint8_t>(Pairing::HOPO_1) || group == static_cast<uint8_t>(Pairing::HOPO_2) || group == static_cast<uint8_t>(Pairing::HOPO_WIRELESS))
     {
@@ -79,7 +115,7 @@ void RFStorageManager::initRFData(uint8_t group)
         {
             generateRandomValues(hopoValues[i], RF_NUM_DEFAULT, 0x01);
         }
-        memcpy(RF_buffer[group - 1], hopoValues[group - 1], sizeof(hopoValues[group - 1]));
-        saveRFData(RfSendEncoding::TRIBIT, group, RF_buffer[group - 1], RF_NUM_DEFAULT);
+        memcpy(manager.RF_buffer[group - 1], hopoValues[group - 1], sizeof(hopoValues[group - 1]));
+        saveRFData(RfSendEncoding::TRIBIT, group, manager.RF_buffer[group - 1], RF_NUM_DEFAULT);
     }
 }

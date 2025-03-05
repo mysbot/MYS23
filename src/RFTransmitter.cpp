@@ -1,13 +1,13 @@
 #include "RFTransmitter.h"
 setRFpara setRFPara2;
-RFTransmitter::RFTransmitter(uint16_t outputPin)
-    : outputPin(outputPin)
+RFTransmitter::RFTransmitter(uint16_t outputPin,address_Manager &AddManager)
+    : outputPin(outputPin),AddManager(AddManager)
 {
 }
 void RFTransmitter::rfsend_build(uint8_t rfWorkMode)
 {
     setRFPara2.setRFParameters(rfWorkMode);
-    rfStorageManager.loadRFData();
+    rfStorageManager.loadRFData(AddManager);
     tx_whatever = rfsend_builder(
         RfSendEncoding::TRIBIT,
         outputPin,
@@ -35,7 +35,7 @@ void RFTransmitter::rfsend_build(uint8_t rfWorkMode)
 void RFTransmitter::setup()
 {
     pinMode(outputPin, OUTPUT);
-    rfsend_build(ADDmanager.RFworkingMode_value);
+    rfsend_build(AddManager.RFworkingMode_value);
     // mySerial.println("RF transmitter mode is ok. ");
 }
 
@@ -80,7 +80,7 @@ RFCommand RFTransmitter::dequeueCommand()
 
 void RFTransmitter::sendCode(Command index, uint8_t *data, uint8_t group)
 {
-    if ((ADDmanager.RFpairingMode_value == static_cast<uint8_t>(Pairing::PAIR_OUT_TO_WORK)) && (ADDmanager.RFworkingMode_value == static_cast<uint8_t>(RFworkMode::HOPO_TRANSMITTER) || ADDmanager.RFworkingMode_value == static_cast<uint8_t>(RFworkMode::HANS_TRANSMITTER) || ADDmanager.RFworkingMode_value == static_cast<uint8_t>(RFworkMode::HANS_BOTH) || ADDmanager.RFworkingMode_value == static_cast<uint8_t>(RFworkMode::HANS_HOPO) || ADDmanager.RFworkingMode_value == static_cast<uint8_t>(RFworkMode::HOPO_HANS)))
+    if ((AddManager.RFpairingMode_value == static_cast<uint8_t>(Pairing::PAIR_OUT_TO_WORK)) && (AddManager.RFworkingMode_value == static_cast<uint8_t>(RFworkMode::HOPO_TRANSMITTER) || AddManager.RFworkingMode_value == static_cast<uint8_t>(RFworkMode::HANS_TRANSMITTER) || AddManager.RFworkingMode_value == static_cast<uint8_t>(RFworkMode::HANS_BOTH) || AddManager.RFworkingMode_value == static_cast<uint8_t>(RFworkMode::HANS_HOPO) || AddManager.RFworkingMode_value == static_cast<uint8_t>(RFworkMode::HOPO_HANS)))
     {
         RFCommand newCommand;
         newCommand.index = index;
@@ -105,7 +105,7 @@ void RFTransmitter::update()
         // Prepare the data for sending
         uint16_t temp = (static_cast<uint8_t>(command.index)) - command.group * 0x10;
         memcpy(currentSendData, command.data, txParams->dataLen);
-        switch (static_cast<RFworkMode>(ADDmanager.RFworkingMode_value))
+        switch (static_cast<RFworkMode>(AddManager.RFworkingMode_value))
         {
         case RFworkMode::HOPO_HANS:
         case RFworkMode::HANS_BOTH:

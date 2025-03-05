@@ -7,8 +7,8 @@ const char *encoding_names[] = {
     "<unmanaged encoding>"   // Anything else
 };
 
-RFReceiver::RFReceiver(uint8_t rxPin)
-    : rxPin(rxPin), rfTaskHandle(nullptr)
+RFReceiver::RFReceiver(uint8_t rxPin,address_Manager &AddManager)
+    : rxPin(rxPin), AddManager(AddManager),  rfTaskHandle(nullptr)
 {
 }
 
@@ -16,7 +16,7 @@ void RFReceiver::begin()
 {
     pinMode(rxPin, INPUT);
     rfTrack = new Track(rxPin);
-    rfStorageManager.loadRFData();
+    rfStorageManager.loadRFData(AddManager);
 }
 // 接收任务，运行在 core1
 void RFReceiver::RFReceiverTask(void *parameter)
@@ -164,20 +164,22 @@ void RFReceiver::processSignalParams(Decoder *pdec)
     }
 
     // 将接收到的信号存储到 EEPROM
-    if (ADDmanager.RFpairingMode_value > (u_int8_t)Pairing::PAIR_OUT_TO_WORK && ADDmanager.RFpairingMode_value <= (u_int8_t)Pairing::PAIR_OUT_TO_WORK + NUM_GROUPS)
+    if (AddManager.RFpairingMode_value > (u_int8_t)Pairing::PAIR_OUT_TO_WORK && AddManager.RFpairingMode_value <= (u_int8_t)Pairing::PAIR_OUT_TO_WORK + NUM_GROUPS)
     {
         mySerial.println("paring RF signal .");
         if (lastReceivedParams.dataLength >= 3 && lastReceivedParams.dataLength <= RF_NUM_DEFAULT && lastReceivedParams.encoding == RfSendEncoding::TRIBIT)
         {
 
-            if (rfStorageManager.saveRFData(lastReceivedParams.encoding, ADDmanager.RFpairingMode_value, lastReceivedParams.data, lastReceivedParams.dataLength))
-            {
-                ADDmanager.RFpairingMode_value = static_cast<uint8_t>(Pairing::PAIR_OUT_TO_WORK);
+            if (rfStorageManager.saveRFData(lastReceivedParams.encoding, AddManager.RFpairingMode_value, lastReceivedParams.data, lastReceivedParams.dataLength))
+            {                
+                rfStorageManager.initRFData(AddManager.RFpairingMode_value, AddManager);
+                AddManager.RFpairingMode_value = static_cast<uint8_t>(Pairing::PAIR_OUT_TO_WORK);
+
             }
             /* code */
         }
     }
-    else if (ADDmanager.RFpairingMode_value == (u_int8_t)Pairing::PAIR_OUT_TO_WORK && (ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_BOTH || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_RECEIVER || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_HANS || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_HOPO || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_RECEIVER))
+    else if (AddManager.RFpairingMode_value == (u_int8_t)Pairing::PAIR_OUT_TO_WORK && (AddManager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_BOTH || AddManager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_RECEIVER || AddManager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_HANS || AddManager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_HOPO || AddManager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_RECEIVER))
     {
         // mySerial.println("compare RF signal .");
         checkAndExecuteCommand(lastReceivedParams.data, lastReceivedParams.dataLength);
@@ -230,9 +232,9 @@ void RFReceiver::checkAndExecuteCommand(uint8_t *data, uint8_t datalength)
     // 修改循环变量类型为 int16_t 以确保循环可以正确结束
     for (int16_t group = NUM_GROUPS - 1; group >= 0; group--)
     {
-        if (memcmp(data, RF_buffer[group], datalength - 1) == 0)
+        if (memcmp(data, AddManager.RF_buffer[group], datalength - 1) == 0)
         {
-            uint8_t lastByte = checkRFLastByte(data[datalength - 1], RF_buffer[group][datalength - 1]);
+            uint8_t lastByte = checkRFLastByte(data[datalength - 1], AddManager.RF_buffer[group][datalength - 1]);
             if (lastByte == static_cast<uint8_t>(Command::SCREEN_DOWN))
             {
                 // mySerial.println("down button is pressed .");
@@ -269,23 +271,23 @@ void RFReceiver::checkAndExecuteCommand(uint8_t *data, uint8_t datalength)
         }
         else
         {
-            // mySerial.println("Unknown button pressed,and now RF buffer data is:");
-            // for (size_t i = 0; i < NUM_GROUPS; i++)
-            // {
+            mySerial.println("Unknown button pressed,and now RF buffer data is:");
+            for (size_t i = 0; i < NUM_GROUPS; i++)
+            {
 
-            //     for (size_t j = 0; j < RF_NUM_DEFAULT; j++)
-            //     {
-            //         mySerial.printf("%02X ", RF_buffer[i][j]);
-            //     }
-            //     mySerial.println();
-            // }
+                for (size_t j = 0; j < RF_NUM_DEFAULT; j++)
+                {
+                    mySerial.printf("%02X ", AddManager.RF_buffer[i][j]);
+                }
+                mySerial.println();
+            }
         }
     }
 }
 
 uint8_t RFReceiver::checkRFLastByte(uint8_t lastByte, uint8_t commandlastByte)
 {
-    switch ((RFworkMode)ADDmanager.RFworkingMode_value)
+    switch ((RFworkMode)AddManager.RFworkingMode_value)
     {
     case RFworkMode::HANS_RECEIVER:
     case RFworkMode::HANS_BOTH:
@@ -346,12 +348,12 @@ void RFReceiver::executeCommand(uint16_t group, Command screenCmd, Command windo
     }
     else if (RFgroup == 1)
     {
-        mySerial.printf("Screen %s button pressed\n", action);
+        mySerial.printf("Screen %s button pressed from group%d\n", action, group);
         receiveCommand.index = screenCmd;
     }
     else if (RFgroup == 0)
     {
-        mySerial.printf("Window %s button pressed\n", action);
+        mySerial.printf("Window %s button pressed from group%d\n", action, group);
         receiveCommand.index = windowCmd;
     }
 }

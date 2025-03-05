@@ -18,10 +18,10 @@ class RFStorageManager {
 public:
     RFStorageManager(uint16_t startAddr);
     // 根据当前工作模式，扫描 EEPROM 区域，将数据加载到 RF_buffer 中
-    bool loadRFData();
+    bool loadRFData(address_Manager &manager);
     // 保存单个数据包到 EEPROM（这里采用固定偏移计算方式，可按需要修改为查找更新）
     bool saveRFData(RfSendEncoding mode, uint8_t group,  uint8_t* data, uint8_t dataLen);
-    void initRFData(uint8_t group);
+    void initRFData(uint8_t group,address_Manager &manager);
 private:
     uint16_t startAddress;
     uint16_t eepromSize;
