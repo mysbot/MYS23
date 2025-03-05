@@ -22,8 +22,8 @@ bool RFStorageManager::loadRFData()
         {
             EEPROMManager::readData(addr + sizeof(header), ADDmanager.RF_buffer[header.group], header.dataLen);
         }
-        // 移动到下一个数据包位置
-        addr += (sizeof(header) + header.dataLen) * i;
+        // 修正偏移量计算，使用固定步长
+        addr += (sizeof(header) + RF_NUM_DEFAULT);
 
         for (size_t j = 0; j < RF_NUM_DEFAULT; j++)
         {
@@ -113,7 +113,7 @@ void RFStorageManager::initRFData(uint8_t group, address_Manager &manager)
             {0x4F, 0x27, 0x84, 0x85, 0xE6},
             {0x00, 0x4b, 0xac, 0x21, 0x66},
             {0x4F, 0x27, 0x84, 0x85, 0xE6}};
-        memcpy(ADDmanager.RF_buffer[group - 1], hansValues[group - 1], sizeof(hansValues[group - 1]));
+        memcpy(manager.RF_buffer[group - 1], hansValues[group - 1], sizeof(hansValues[group - 1]));
         // 注释下面这行，避免重复调用保存函数
         //saveRFData(RfSendEncoding::TRIBIT, group, manager.RF_buffer[group - 1], RF_NUM_DEFAULT);
     }
@@ -126,7 +126,7 @@ void RFStorageManager::initRFData(uint8_t group, address_Manager &manager)
         {
             generateRandomValues(hopoValues[i], RF_NUM_DEFAULT, 0x01);
         }
-        memcpy(ADDmanager.RF_buffer[group - 1], hopoValues[group - 1], sizeof(hopoValues[group - 1]));
+        memcpy(manager.RF_buffer[group - 1], hopoValues[group - 1], sizeof(hopoValues[group - 1]));
         // 注释下面这行，避免重复调用保存函数
         //saveRFData(RfSendEncoding::TRIBIT, group, manager.RF_buffer[group - 1], RF_NUM_DEFAULT);
     }
