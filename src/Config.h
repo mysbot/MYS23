@@ -5,24 +5,37 @@
 #include "esp_task_wdt.h"
 
 #define VERSION 0x21
+
 // Pin definitions
+
+//RF69H占用引脚
+// MOSI：GPIO23
+// MISO：GPIO19
+// SCK：GPIO18
+// CS：GPIO5
+// 中断（DIO0）：GPIO26
+// RST：GPIO4（不要悬空）
+
+
 #define TX0_PIN 1
 #define RX0_PIN 3
 #define TX1_PIN 17
 #define RX1_PIN 16
 
-#define BUTTON_MODE 34
-
+#define BUTTON_UP_1 34
+#define BUTTON_DOWN_1 35
+#define BUTTON_STOP_1 27
 #define BUTTON_UP 33
 #define BUTTON_DOWN 32
-#define BUTTON_STOP 18
-#define RF_RECEIVER_PIN 19
+#define BUTTON_STOP 15
+#define RF_RECEIVER_PIN 14
 #define RF_TRANSMITTER_PIN 21
 
 #define RELAY_BUTTON1 22
-// #define RELAY_BUTTON1 4
-#define RELAY_BUTTON2 23
-// #define RELAY_BUTTON2 5
+#define RELAY_BUTTON2 13
+#define RELAY_BUTTON3 12
+#define RELAY_BUTTON4 2
+#define RELAY_BUTTON5 25
 
 // EEPROM configuration
 #define EEPROM_SIZE 512
@@ -42,7 +55,8 @@
 #define SECURITY_ADDRESS 0x68
 
 #define RF_NUM_DEFAULT 5
-#define NUM_GROUPS 6
+
+#define NUM_GROUPS 8
 
 struct address_Manager
 {
@@ -74,13 +88,7 @@ struct address_Manager
 };
 extern address_Manager ADDmanager;
 
-// Define RF modes
-// #define RF_HANS_MODE 0
-// #define RF_HOPO_MODE 1
-// #define RF_GU_MODE 2
-// #define RF_ED_MODE 3
-//
-//#define RF_BIT_DEFAULT 39
+
 
 
 #define INIT_DATA 0xFF
@@ -102,13 +110,13 @@ extern uint8_t TARGET_ADDRESS;
 // Define mySerial here, either as HardwareSerial or SoftwareSerial
 extern HardwareSerial mySerial; // for HardwareSerial
 
-extern uint8_t hansValues[NUM_GROUPS][RF_NUM_DEFAULT];
+
 
 enum class rainSignalMode : uint8_t
 {
     TURNOFF = 0,
     WIRELESS = 1,
-    WIRED = 2,
+    //WIRED = 2,
 
     OTHER = 0xFF
 
@@ -131,6 +139,10 @@ enum class RFworkMode : uint8_t
     HOPO_TRANSMITTER = 3,
     HANS_HOPO = 4,
     HOPO_HANS = 6,
+
+    AES_RECEIVER = 7,
+    AES_TRANSMITTER = 8,
+
     HANS_BOTH = 0xEE,
     OTHER = 0xFF
 
@@ -139,7 +151,10 @@ enum class ControlGroup : uint8_t
 {
     GROUP1 = 1,
     GROUP2 = 2,
-    RAINSIGNAL = 3,
+    GROUP3 = 3,
+    GROUP4 = 4,
+    GROUP5 = 5,
+
     ALL = 0,
 
     OTHER = 0xFF
@@ -152,7 +167,7 @@ enum class SourceType : uint8_t
     RFINDEX = 2,
     COMM1 = 3,
     COMM0 = 4,
-    RAINSIGNAL = 5,
+    AES = 5,
 
     OTHER = 0xFF
 
@@ -163,6 +178,7 @@ enum class ControlType : uint8_t
     TRANSMITTER = 2,
     COMM1 = 3,
     COMM0 = 4,
+    AES = 5,
 
     OTHER = 0xFF
 
@@ -247,12 +263,11 @@ enum class Pairing : uint8_t
     HANS_2 = 0X2,
     HOPO_1 = 0X3,
     HOPO_2 = 0X4,
-    // HANS_RECEIVER=0X5,
-    // HOPO_TRANSMITTER=0X6,
-    // HOPO_RECEIVER=0X7,
-    // HANS_TRANSMITTER=0X8,
-    HANS_WIRELESS = 0X05,
-    HOPO_WIRELESS = 0X06,
+    AES_1 = 0X5,
+    AES_2 = 0X6,
+    HANS_WIRELESS = NUM_GROUPS-1,
+    HOPO_WIRELESS = NUM_GROUPS,
+
     PAIR_CLEAR = 0X0F
 
 };

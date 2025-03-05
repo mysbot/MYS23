@@ -7,15 +7,15 @@
 #include "RFStorageManager.h"
 #include "Button_Operations.h"
 // Class Instances
-ButtonOperations buttonOperations(BUTTON_MODE, BUTTON_UP, BUTTON_DOWN, BUTTON_STOP);
-//RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN, ADDmanager);
+ButtonOperations buttonOperations(BUTTON_UP_1, BUTTON_UP, BUTTON_DOWN, BUTTON_STOP);
+// RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN, ADDmanager);
 RFTransmitter rfTransmitter(RF_TRANSMITTER_PIN);
 EEPROMManager eepromManager;
 // APManager apManager(80, ADDmanager);
 // WindowControl windowcontrol(ADDmanager);
 // RFReceiver rfReceiver(RF_RECEIVER_PIN, ADDmanager);
 // SerialManager serialManager(ADDmanager);
- APManager apManager(80);
+APManager apManager(80);
 WindowControl windowcontrol;
 RFReceiver rfReceiver(RF_RECEIVER_PIN);
 SerialManager serialManager;
@@ -388,8 +388,8 @@ void setButtonCallbacks()
                                       { handleButtonPress(Command::SCREEN_STOP, Command::WINDOW_STOP); });
     buttonOperations.onButtonBShortPressed([]()
                                            {
-        if(ADDmanager.rainSignal_value==static_cast<uint8_t>(rainSignalMode::WIRED))
-          serialManager.serial0Function(Command::RAIN_SIGNAL);
+        // if(ADDmanager.rainSignal_value==static_cast<uint8_t>(rainSignalMode::WIRED))
+        //   serialManager.serial0Function(Command::RAIN_SIGNAL);
         ; });
     buttonOperations.onButtonDShortPressed([]() {
 
@@ -470,8 +470,8 @@ void enterProductionTestMode()
 
     // memcpy(RF_buffer, hansValues, sizeof(RF_buffer));
     RFStorageManager rfStorageManager(FIRST_ADDRESS_FOR_RF_SIGNAL);
-    rfStorageManager.initRFData((uint8_t)Pairing::HANS_1 , ADDmanager);
-    rfStorageManager.initRFData((uint8_t)Pairing::HANS_2 , ADDmanager);
+    rfStorageManager.initRFData((uint8_t)Pairing::HANS_1, ADDmanager);
+    rfStorageManager.initRFData((uint8_t)Pairing::HANS_2, ADDmanager);
     // 设置产测模式触发标志
     ADDmanager.productionTestModeTriggered = !TURN_OFF;
     updateAddress(PRODUCTION_TEST_MODE_ADDRESS, ADDmanager.productionTestModeTriggered);

@@ -276,9 +276,9 @@ void APManager::handleGetValues(AsyncWebServerRequest *request)
     wireless["value"] = (uint8_t)(rainSignalMode::WIRELESS);
     wireless["label"] = "无线";
 
-    JsonObject wired = rainSignalOptions.createNestedObject();
-    wired["value"] = (uint8_t)(rainSignalMode::WIRED);
-    wired["label"] = "有线";
+    // JsonObject wired = rainSignalOptions.createNestedObject();
+    // wired["value"] = (uint8_t)(rainSignalMode::WIRED);
+    // wired["label"] = "有线";
 
     doc["mysversion"] = VERSION;
     // doc["HANS_"] = RF_HANS_MODE;

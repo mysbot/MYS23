@@ -21,7 +21,7 @@ public:
    
 private:
     uint16_t pinA, pinB,pinC, pinD;
-    uint32_t shortKey=100,key=500,longKey=2000;
+    uint32_t shortKey=300,key=500,longKey=2000;
     ButtonCallback buttonACallback = nullptr;
     ButtonCallback buttonBCallback = nullptr;
     ButtonCallback buttonBShortPressCallback = nullptr;
