@@ -16,7 +16,7 @@ void RFReceiver::begin()
 {
     pinMode(rxPin, INPUT);
     rfTrack = new Track(rxPin);
-    rfStorageManager.loadRFData(AddManager);
+    rfStorageManager.loadRFData(ADDmanager);
 }
 // 接收任务，运行在 core1
 void RFReceiver::RFReceiverTask(void *parameter)
@@ -164,22 +164,22 @@ void RFReceiver::processSignalParams(Decoder *pdec)
     }
 
     // 将接收到的信号存储到 EEPROM
-    if (AddManager.RFpairingMode_value > (u_int8_t)Pairing::PAIR_OUT_TO_WORK && AddManager.RFpairingMode_value <= (u_int8_t)Pairing::PAIR_OUT_TO_WORK + NUM_GROUPS)
+    if (ADDmanager.RFpairingMode_value > (u_int8_t)Pairing::PAIR_OUT_TO_WORK && ADDmanager.RFpairingMode_value <= (u_int8_t)Pairing::PAIR_OUT_TO_WORK + NUM_GROUPS)
     {
         mySerial.println("paring RF signal .");
         if (lastReceivedParams.dataLength >= 3 && lastReceivedParams.dataLength <= RF_NUM_DEFAULT && lastReceivedParams.encoding == RfSendEncoding::TRIBIT)
         {
 
-            if (rfStorageManager.saveRFData(lastReceivedParams.encoding, AddManager.RFpairingMode_value, lastReceivedParams.data, lastReceivedParams.dataLength))
+            if (rfStorageManager.saveRFData(lastReceivedParams.encoding, ADDmanager.RFpairingMode_value, lastReceivedParams.data, lastReceivedParams.dataLength))
             {                
-                rfStorageManager.initRFData(AddManager.RFpairingMode_value, AddManager);
-                AddManager.RFpairingMode_value = static_cast<uint8_t>(Pairing::PAIR_OUT_TO_WORK);
+                rfStorageManager.initRFData(ADDmanager.RFpairingMode_value, ADDmanager);
+                ADDmanager.RFpairingMode_value = static_cast<uint8_t>(Pairing::PAIR_OUT_TO_WORK);
 
             }
             /* code */
         }
     }
-    else if (AddManager.RFpairingMode_value == (u_int8_t)Pairing::PAIR_OUT_TO_WORK && (AddManager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_BOTH || AddManager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_RECEIVER || AddManager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_HANS || AddManager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_HOPO || AddManager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_RECEIVER))
+    else if (ADDmanager.RFpairingMode_value == (u_int8_t)Pairing::PAIR_OUT_TO_WORK && (ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_BOTH || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_RECEIVER || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_HANS || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HANS_HOPO || ADDmanager.RFworkingMode_value == (u_int8_t)RFworkMode::HOPO_RECEIVER))
     {
         // mySerial.println("compare RF signal .");
         checkAndExecuteCommand(lastReceivedParams.data, lastReceivedParams.dataLength);
@@ -232,9 +232,9 @@ void RFReceiver::checkAndExecuteCommand(uint8_t *data, uint8_t datalength)
     // 修改循环变量类型为 int16_t 以确保循环可以正确结束
     for (int16_t group = NUM_GROUPS - 1; group >= 0; group--)
     {
-        if (memcmp(data, AddManager.RF_buffer[group], datalength - 1) == 0)
+        if (memcmp(data, ADDmanager.RF_buffer[group], datalength - 1) == 0)
         {
-            uint8_t lastByte = checkRFLastByte(data[datalength - 1], AddManager.RF_buffer[group][datalength - 1]);
+            uint8_t lastByte = checkRFLastByte(data[datalength - 1], ADDmanager.RF_buffer[group][datalength - 1]);
             if (lastByte == static_cast<uint8_t>(Command::SCREEN_DOWN))
             {
                 // mySerial.println("down button is pressed .");
@@ -277,7 +277,7 @@ void RFReceiver::checkAndExecuteCommand(uint8_t *data, uint8_t datalength)
 
                 for (size_t j = 0; j < RF_NUM_DEFAULT; j++)
                 {
-                    mySerial.printf("%02X ", AddManager.RF_buffer[i][j]);
+                    mySerial.printf("%02X ", ADDmanager.RF_buffer[i][j]);
                 }
                 mySerial.println();
             }
@@ -287,7 +287,7 @@ void RFReceiver::checkAndExecuteCommand(uint8_t *data, uint8_t datalength)
 
 uint8_t RFReceiver::checkRFLastByte(uint8_t lastByte, uint8_t commandlastByte)
 {
-    switch ((RFworkMode)AddManager.RFworkingMode_value)
+    switch ((RFworkMode)ADDmanager.RFworkingMode_value)
     {
     case RFworkMode::HANS_RECEIVER:
     case RFworkMode::HANS_BOTH:

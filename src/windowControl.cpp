@@ -4,8 +4,8 @@
 WindowControl::WindowControl(address_Manager &AddManager)
     : AddManager(AddManager),                        // Initialize address manager
       relayControl(RELAY_BUTTON1, RELAY_BUTTON2),    // Initialize relay control
-      rfTransmitter(RF_TRANSMITTER_PIN, AddManager), // Initialize RF transmitter
-      serialManager(AddManager)                     // Initialize serial manager
+      rfTransmitter(RF_TRANSMITTER_PIN, ADDmanager), // Initialize RF transmitter
+      serialManager(ADDmanager)                     // Initialize serial manager
 {
 }
 
@@ -17,7 +17,7 @@ void WindowControl::ControlUpdate()
 {
   if (mutualActive && (millis() - mutualstartMillis >= mutualdelayDuration))
   {
-    if (AddManager.Is_security_value != static_cast<uint8_t>(antiClampMode::EXCEPT))
+    if (ADDmanager.Is_security_value != static_cast<uint8_t>(antiClampMode::EXCEPT))
     {
 
       controlBasedOnWindowType(ControlType::TRANSMITTER, Command::SCREEN_DOWN);
@@ -31,7 +31,7 @@ void WindowControl::ControlUpdate()
 }
 void WindowControl::isMutualControl()
 {
-  if ((!AddManager.Is_mutual_value))
+  if ((!ADDmanager.Is_mutual_value))
   {
     mutualActive = true;
     mutualstartMillis = millis();
@@ -43,14 +43,14 @@ void WindowControl::controlBasedOnWindowType(ControlType controltype, Command co
   switch (controltype)
   {
   case ControlType::RELAY_CONTROL:
-    controlRelay(AddManager.windowType_value, command);
+    controlRelay(ADDmanager.windowType_value, command);
     break;
   case ControlType::TRANSMITTER:
-    controlTransmitter(AddManager.windowType_value, command);
+    controlTransmitter(ADDmanager.windowType_value, command);
     break;
 
   case ControlType::COMM1:
-    controlCom(AddManager.windowType_value, command);
+    controlCom(ADDmanager.windowType_value, command);
     break;
   }
 }
@@ -81,12 +81,12 @@ void WindowControl::controlRelay(uint16_t windowType, Command command)
 }
 void WindowControl::controlAutoLiftRelay(Command command)
 {
-  if (AddManager.Is_security_value == static_cast<uint8_t>(antiClampMode::TURNON))
+  if (ADDmanager.Is_security_value == static_cast<uint8_t>(antiClampMode::TURNON))
   {
     relayControl.controlRelay(Command::SCREEN_DOWN); // 常开
     relayControl.controlRelay(Command::WINDOW_DOWN); // 常开
   }
-  else if (AddManager.Is_security_value == static_cast<uint8_t>(antiClampMode::TURNOFF))
+  else if (ADDmanager.Is_security_value == static_cast<uint8_t>(antiClampMode::TURNOFF))
   {
     relayControl.controlRelay(Command::SCREEN_STOP); // 常闭
     relayControl.controlRelay(Command::WINDOW_STOP); // 常闭
@@ -104,7 +104,7 @@ void WindowControl::controlAutoSlidingDoorRelay(Command command)
   default:
     break;
   }
-  if (AddManager.slidingDoorMode_value)
+  if (ADDmanager.slidingDoorMode_value)
   {
     relayControl.controlRelay(Command::WINDOW_DOWN); // RELAY2 接HALF模式
   }
@@ -147,7 +147,7 @@ void WindowControl::controlSkylightWindowRelay(Command command)
     break;
 
   case Command::RAIN_SIGNAL:
-    if (AddManager.rainSignal_value)
+    if (ADDmanager.rainSignal_value)
       relayControl.controlRelay(Command::SKYLIGHT_CLOSE);
     break;
   }
@@ -208,7 +208,7 @@ void WindowControl::controlAutoLiftTransmitter(Command command, uint16_t bufferI
   case Command::WINDOW_UP:
   case Command::WINDOW_STOP:
   case Command::WINDOW_DOWN:
-    rfTransmitter.sendCode(command, AddManager.RF_buffer[bufferIndex], bufferIndex); // 发送自动升降窗的命令
+    rfTransmitter.sendCode(command, ADDmanager.RF_buffer[bufferIndex], bufferIndex); // 发送自动升降窗的命令
     break;
   case Command::LIGHT_ON:
   case Command::LIGHT_OFF:
@@ -216,8 +216,8 @@ void WindowControl::controlAutoLiftTransmitter(Command command, uint16_t bufferI
     break;
 
   case Command::RAIN_SIGNAL:
-    if (AddManager.rainSignal_value)
-      rfTransmitter.sendCode(Command::WINDOW_UP, AddManager.RF_buffer[static_cast<uint8_t>(ControlGroup::GROUP2) - 1], static_cast<uint8_t>(ControlGroup::GROUP2) - 1);
+    if (ADDmanager.rainSignal_value)
+      rfTransmitter.sendCode(Command::WINDOW_UP, ADDmanager.RF_buffer[static_cast<uint8_t>(ControlGroup::GROUP2) - 1], static_cast<uint8_t>(ControlGroup::GROUP2) - 1);
     break;
   default:
     // Handle unknown commands
@@ -240,13 +240,13 @@ void WindowControl::controlCasementWindowTransmitter(Command command, uint16_t b
   case Command::CASEMENT_OPEN_ALT:
   case Command::CASEMENT_CLOSE:
   case Command::CASEMENT_CLOSE_ALT:
-    rfTransmitter.sendCode(command, AddManager.RF_buffer[bufferIndex], bufferIndex);
+    rfTransmitter.sendCode(command, ADDmanager.RF_buffer[bufferIndex], bufferIndex);
     break;
   case Command::RAIN_SIGNAL:
-    if (AddManager.rainSignal_value)
+    if (ADDmanager.rainSignal_value)
     {
-      rfTransmitter.sendCode(Command::CASEMENT_CLOSE, AddManager.RF_buffer[static_cast<uint8_t>(ControlGroup::GROUP1) - 1], static_cast<uint8_t>(ControlGroup::GROUP1) - 1);
-      rfTransmitter.sendCode(Command::CASEMENT_CLOSE_ALT, AddManager.RF_buffer[static_cast<uint8_t>(ControlGroup::GROUP2) - 1], static_cast<uint8_t>(ControlGroup::GROUP2) - 1);
+      rfTransmitter.sendCode(Command::CASEMENT_CLOSE, ADDmanager.RF_buffer[static_cast<uint8_t>(ControlGroup::GROUP1) - 1], static_cast<uint8_t>(ControlGroup::GROUP1) - 1);
+      rfTransmitter.sendCode(Command::CASEMENT_CLOSE_ALT, ADDmanager.RF_buffer[static_cast<uint8_t>(ControlGroup::GROUP2) - 1], static_cast<uint8_t>(ControlGroup::GROUP2) - 1);
     };
     break;
   default:
@@ -267,7 +267,7 @@ void WindowControl::controlCurtainTransmitter(Command command, uint16_t bufferIn
   case Command::WINDOW_UP:
   case Command::WINDOW_STOP:
   case Command::WINDOW_DOWN:
-    rfTransmitter.sendCode(command, AddManager.RF_buffer[bufferIndex], bufferIndex); // 发送自动升降窗的命令
+    rfTransmitter.sendCode(command, ADDmanager.RF_buffer[bufferIndex], bufferIndex); // 发送自动升降窗的命令
     break;
 
   default:
@@ -315,22 +315,22 @@ void WindowControl::controlAutoLiftCom(Command command)
     break;
 
   case Command::RAIN_SIGNAL:
-    if (AddManager.rainSignal_value)
+    if (ADDmanager.rainSignal_value)
       serialManager.serial1SendCommand(Command::WINDOW_UP); // 发送自动升降窗的命令
     break;
   case Command::ISWINDOW_SAFESENSOR:
   {
-    AddManager.Is_security_value = static_cast<uint8_t>(antiClampMode::EXCEPT);
-    updateAddress(AddManager.securityAddress, AddManager.Is_security_value);
+    ADDmanager.Is_security_value = static_cast<uint8_t>(antiClampMode::EXCEPT);
+    updateAddress(ADDmanager.securityAddress, ADDmanager.Is_security_value);
   }
   break;
 
   case Command::ISWINDOW_DOWN:
 
-    if (AddManager.Is_security_value)
+    if (ADDmanager.Is_security_value)
     {
-      AddManager.Is_security_value = static_cast<uint8_t>(antiClampMode::REFRESH);
-      updateAddress(AddManager.securityAddress, AddManager.Is_security_value);
+      ADDmanager.Is_security_value = static_cast<uint8_t>(antiClampMode::REFRESH);
+      updateAddress(ADDmanager.securityAddress, ADDmanager.Is_security_value);
     }
     isMutualControl();
 
@@ -370,7 +370,7 @@ void WindowControl::controlCasementWindowCom(Command command)
     break;
 
   case Command::RAIN_SIGNAL:
-    if (AddManager.rainSignal_value)
+    if (ADDmanager.rainSignal_value)
     { // comm1.sendUart1Data(Command::CASEMENT_CLOSE);  // 发送自动关窗的命令
       // comm1.sendUart1Data(Command::CASEMENT_CLOSE_ALT);
     };
@@ -396,7 +396,7 @@ void WindowControl::controlSkylightWindowCom(Command command)
     break;
 
   case Command::RAIN_SIGNAL:
-    if (AddManager.rainSignal_value)
+    if (ADDmanager.rainSignal_value)
     {
     };
     // comm1.sendUart1Data(Command::SKYLIGHT_CLOSE);  // 发送自动关窗的命令

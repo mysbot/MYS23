@@ -282,13 +282,13 @@ void APManager::handleGetValues(AsyncWebServerRequest *request)
     doc["mysversion"] = VERSION;
     // doc["HANS_"] = RF_HANS_MODE;
     // doc["HOPO_"] = RF_HOPO_MODE;
-    doc["windowType"] = AddManager.windowType_value;
-    // doc["RFmode"] = AddManager.RFmode_value;
-    doc["controlGroup"] = AddManager.controlGroup_value;
-    doc["RFworkingMode"] = AddManager.RFworkingMode_value;
-    doc["RFpairingMode"] = AddManager.RFpairingMode_value;
-    doc["localadd"] = AddManager.localadd_value;
-    doc["RainSignal"] = AddManager.rainSignal_value;
+    doc["windowType"] = ADDmanager.windowType_value;
+    // doc["RFmode"] = ADDmanager.RFmode_value;
+    doc["controlGroup"] = ADDmanager.controlGroup_value;
+    doc["RFworkingMode"] = ADDmanager.RFworkingMode_value;
+    doc["RFpairingMode"] = ADDmanager.RFpairingMode_value;
+    doc["localadd"] = ADDmanager.localadd_value;
+    doc["RainSignal"] = ADDmanager.rainSignal_value;
 
     String response;
     serializeJson(doc, response);
@@ -310,8 +310,8 @@ void APManager::handleSetValues(AsyncWebServerRequest *request, JsonObject json)
         if (json.containsKey("localadd"))
         {
             uint8_t localAdd = json["localadd"].as<uint8_t>();
-            AddManager.localadd_value = localAdd;
-            if (!APmanager.writeData(AddManager.localAddress, &AddManager.localadd_value, sizeof(AddManager.localadd_value)))
+            ADDmanager.localadd_value = localAdd;
+            if (!APmanager.writeData(ADDmanager.localAddress, &ADDmanager.localadd_value, sizeof(ADDmanager.localadd_value)))
             {
                 // Serial.println("Failed to write localadd");
                 success = false;
@@ -320,8 +320,8 @@ void APManager::handleSetValues(AsyncWebServerRequest *request, JsonObject json)
 
         if (json.containsKey("RFworkingMode"))
         {
-            AddManager.RFworkingMode_value = json["RFworkingMode"].as<uint8_t>();
-            if (!APmanager.writeData(AddManager.RFworkingModeAddress, &AddManager.RFworkingMode_value, sizeof(AddManager.RFworkingMode_value)))
+            ADDmanager.RFworkingMode_value = json["RFworkingMode"].as<uint8_t>();
+            if (!APmanager.writeData(ADDmanager.RFworkingModeAddress, &ADDmanager.RFworkingMode_value, sizeof(ADDmanager.RFworkingMode_value)))
             {
                 Serial.println("Failed to write RFworkingMode");
                 success = false;
@@ -330,8 +330,8 @@ void APManager::handleSetValues(AsyncWebServerRequest *request, JsonObject json)
 
         if (json.containsKey("controlGroup"))
         {
-            AddManager.controlGroup_value = json["controlGroup"].as<uint8_t>();
-            if (!APmanager.writeData(AddManager.controlGroupAddress, &AddManager.controlGroup_value, sizeof(AddManager.controlGroup_value)))
+            ADDmanager.controlGroup_value = json["controlGroup"].as<uint8_t>();
+            if (!APmanager.writeData(ADDmanager.controlGroupAddress, &ADDmanager.controlGroup_value, sizeof(ADDmanager.controlGroup_value)))
             {
                 Serial.println("Failed to write controlGroup");
                 success = false;
@@ -340,8 +340,8 @@ void APManager::handleSetValues(AsyncWebServerRequest *request, JsonObject json)
 
         if (json.containsKey("RainSignal"))
         {
-            AddManager.rainSignal_value = json["RainSignal"].as<uint8_t>();
-            if (!APmanager.writeData(AddManager.rainSignalAddress, &AddManager.rainSignal_value, sizeof(AddManager.rainSignal_value)))
+            ADDmanager.rainSignal_value = json["RainSignal"].as<uint8_t>();
+            if (!APmanager.writeData(ADDmanager.rainSignalAddress, &ADDmanager.rainSignal_value, sizeof(ADDmanager.rainSignal_value)))
             {
                 Serial.println("Failed to write RainSignal");
                 success = false;
@@ -350,8 +350,8 @@ void APManager::handleSetValues(AsyncWebServerRequest *request, JsonObject json)
 
         if (json.containsKey("windowType"))
         {
-            AddManager.windowType_value = json["windowType"].as<uint8_t>();
-            if (!APmanager.writeData(AddManager.windowTypeAddress, &AddManager.windowType_value, sizeof(AddManager.windowType_value)))
+            ADDmanager.windowType_value = json["windowType"].as<uint8_t>();
+            if (!APmanager.writeData(ADDmanager.windowTypeAddress, &ADDmanager.windowType_value, sizeof(ADDmanager.windowType_value)))
             {
                 Serial.println("Failed to write windowType");
                 success = false;
@@ -360,16 +360,16 @@ void APManager::handleSetValues(AsyncWebServerRequest *request, JsonObject json)
 
         if (json.containsKey("RFpairingMode"))
         {
-            AddManager.RFpairingMode_value = json["RFpairingMode"].as<uint8_t>();
-            // if (!APmanager.writeData(AddManager.RFpairingModeAddress, &AddManager.RFpairingMode_value, sizeof(AddManager.RFpairingMode_value)))
+            ADDmanager.RFpairingMode_value = json["RFpairingMode"].as<uint8_t>();
+            // if (!APmanager.writeData(ADDmanager.RFpairingModeAddress, &ADDmanager.RFpairingMode_value, sizeof(ADDmanager.RFpairingMode_value)))
             {
                 Serial.println(" RFpairingMode");
             }
         }
         /*
                 if (json.containsKey("RFmode")) {
-                    AddManager.RFmode_value = json["RFmode"].as<uint8_t>();
-                    if (!APmanager.writeData(AddManager.RFmodeAddress, &AddManager.RFmode_value, sizeof(AddManager.RFmode_value))) {
+                    ADDmanager.RFmode_value = json["RFmode"].as<uint8_t>();
+                    if (!APmanager.writeData(ADDmanager.RFmodeAddress, &ADDmanager.RFmode_value, sizeof(ADDmanager.RFmode_value))) {
                         Serial.println("Failed to write RFmode");
                         success = false;
                     }
@@ -377,8 +377,8 @@ void APManager::handleSetValues(AsyncWebServerRequest *request, JsonObject json)
         */
         if (json.containsKey("HOPOtrans"))
         {
-            AddManager.HOPOTransmit = json["HOPOtrans"].as<uint8_t>();
-            if (!APmanager.writeData(AddManager.securityAddress, &AddManager.HOPOTransmit, sizeof(AddManager.HOPOTransmit)))
+            ADDmanager.HOPOTransmit = json["HOPOtrans"].as<uint8_t>();
+            if (!APmanager.writeData(ADDmanager.securityAddress, &ADDmanager.HOPOTransmit, sizeof(ADDmanager.HOPOTransmit)))
             {
                 Serial.println("Failed to write HOPOtrans");
                 success = false;

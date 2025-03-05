@@ -17,8 +17,8 @@ void SerialManager::begin()
     serialComm1 = new SerialComm(serial1Wrapper);
 
     // 创建UART通信控制器
-    uartComm0 = new UARTComm(serialComm0, BAUDRATE, RX0_PIN, TX0_PIN, 0, AddManager);
-    uartComm1 = new UARTComm(serialComm1, BAUDRATE, RX1_PIN, TX1_PIN, 1, AddManager);
+    uartComm0 = new UARTComm(serialComm0, BAUDRATE, RX0_PIN, TX0_PIN, 0, ADDmanager);
+    uartComm1 = new UARTComm(serialComm1, BAUDRATE, RX1_PIN, TX1_PIN, 1, ADDmanager);
 
     // 初始化UART通信
     uartComm0->init();
